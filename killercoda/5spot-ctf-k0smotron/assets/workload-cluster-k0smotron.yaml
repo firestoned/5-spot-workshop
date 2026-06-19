@@ -1,0 +1,53 @@
+# REAL scenario — workload cluster using k0smotron.
+#
+# The control plane is HOSTED inside the management cluster (K0smotronControlPlane
+# runs as pods — no node burns for it), and the infrastructure is a RemoteCluster
+# (SSH-provisioned machines). Workers are added on a SCHEDULE by 5-Spot as
+# RemoteMachines (see scheduledmachine-k0smotron.yaml).
+#
+# 📚 k0smotron remote-machine model: https://docs.k0smotron.io  (capi-remote)
+#    5-Spot CAPI integration: https://5spot.finos.org/advanced/capi-integration/
+#
+# ⚠️ DRAFT: validate API versions/fields against your installed k0smotron release.
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: dev-cluster
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+    services:
+      cidrBlocks: ["10.128.0.0/12"]
+    serviceDomain: cluster.local
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0smotronControlPlane
+    name: dev-cluster-cp
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: RemoteCluster
+    name: dev-cluster
+---
+# Hosted control plane (runs as pods in the management cluster).
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane
+metadata:
+  name: dev-cluster-cp
+  namespace: default
+spec:
+  version: v1.30.0-k0s.0
+  persistence:
+    type: emptyDir
+  service:
+    type: NodePort
+---
+# Infrastructure cluster for SSH-provisioned (remote) machines.
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteCluster
+metadata:
+  name: dev-cluster
+  namespace: default
+spec: {}

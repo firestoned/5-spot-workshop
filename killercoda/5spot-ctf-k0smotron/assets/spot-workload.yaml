@@ -1,0 +1,44 @@
+# Flag 2 workload: a Deployment that TOLERATES the spot taint 5-Spot applies
+# (workshop.example.com/spot=true:NoSchedule) and uses nodeAffinity to PREFER
+# the spot pool label. This is the "compliant" workload — it is allowed to ride
+# reclaimable capacity. Apply it to the WORKLOAD cluster (dev-cluster.kubeconfig).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: batch-cruncher
+  namespace: default
+  labels:
+    app: batch-cruncher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: batch-cruncher
+  template:
+    metadata:
+      labels:
+        app: batch-cruncher
+    spec:
+      # Tolerate the taint 5-Spot stamps on scheduled "spot" nodes.
+      tolerations:
+        - key: workshop.example.com/spot
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      # Prefer to actually land on the spot pool.
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: workshop.example.com/pool
+                    operator: In
+                    values: ["spot"]
+      containers:
+        - name: cruncher
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi

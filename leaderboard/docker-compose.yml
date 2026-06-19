@@ -1,0 +1,18 @@
+# CTFd leaderboard for the 5-Spot workshop — single container, SQLite, one-day scale.
+#   make leaderboard-up         → http://localhost:8000 (finish admin setup wizard)
+#   make leaderboard-seed       → create the 5 challenges from the repo's flags
+#   make leaderboard-tunnel     → free public URL via Cloudflare quick tunnel
+# For >100 concurrent users or multi-day events, switch to CTFd's official
+# MariaDB+Redis compose: https://github.com/CTFd/CTFd/blob/master/docker-compose.yml
+services:
+  ctfd:
+    image: ctfd/ctfd:latest
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - WORKERS=2
+    volumes:
+      - ctfd-data:/var/lib/CTFd
+volumes:
+  ctfd-data:

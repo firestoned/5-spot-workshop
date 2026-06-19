@@ -1,0 +1,41 @@
+{
+  "title": "5-Spot CTF — Reclaim the Idle (Easy)",
+  "description": "Deploy the 5-Spot machine scheduler on kind + Cluster API (CAPD) and capture the flags: open a schedule window so a worker joins, keep a workload compliant on tainted spot capacity, and survive a graceful drain. Cluster is pre-baked to control-plane Ready.",
+  "details": {
+    "intro": {
+      "text": "intro.md",
+      "background": "setup-background.sh"
+    },
+    "steps": [
+      {
+        "title": "Flag 1 — Open the window",
+        "text": "step1-deploy/text.md",
+        "verify": "step1-deploy/verify.sh"
+      },
+      {
+        "title": "Flag 2 — Stay compliant",
+        "text": "step2-taint/text.md",
+        "verify": "step2-taint/verify.sh"
+      },
+      {
+        "title": "Flag 3 — Survive the drain",
+        "text": "step3-drain/text.md",
+        "verify": "step3-drain/verify.sh"
+      },
+      {
+        "title": "Bonus — GitOps with Flux",
+        "text": "step4-flux-bonus/text.md",
+        "verify": "step4-flux-bonus/verify.sh"
+      }
+    ],
+    "finish": {
+      "text": "finish.md"
+    }
+  },
+  "backend": {
+    "imageid": "ubuntu"
+  },
+  "interface": {
+    "layout": "terminal"
+  }
+}

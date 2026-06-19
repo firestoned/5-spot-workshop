@@ -1,0 +1,20 @@
+{
+  "title": "5-Spot CTF — Reclaim the Idle (REAL: k0s + k0smotron)",
+  "description": "The production-representative scenario from the OSFF workshop: a hosted k0smotron control plane, with 5-Spot scheduling k0s workers onto a remote machine over SSH (RemoteMachine). Capture the flags, then the Confidential Containers double-star bonus.",
+  "details": {
+    "intro": {
+      "text": "intro.md",
+      "background": "setup-background.sh"
+    },
+    "steps": [
+      { "title": "Flag 1 — Open the window", "text": "step1-deploy/text.md", "verify": "step1-deploy/verify.sh" },
+      { "title": "Flag 2 — Stay compliant", "text": "step2-taint/text.md", "verify": "step2-taint/verify.sh" },
+      { "title": "Flag 3 — Survive the drain", "text": "step3-drain/text.md", "verify": "step3-drain/verify.sh" },
+      { "title": "Bonus — GitOps with Flux", "text": "step4-flux-bonus/text.md", "verify": "step4-flux-bonus/verify.sh" },
+      { "title": "Bonus ⭐⭐ — Confidential Containers", "text": "step5-coco/text.md", "verify": "step5-coco/verify.sh" }
+    ],
+    "finish": { "text": "finish.md" }
+  },
+  "backend": { "imageid": "ubuntu" },
+  "interface": { "layout": "terminal" }
+}

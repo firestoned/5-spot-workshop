@@ -1,0 +1,50 @@
+# ⭐⭐ Confidential Containers bonus workload.
+# Same compliant batch job as Flag 2, but now running INSIDE a TEE/microVM via the
+# CoCo runtime — so a *sensitive* regulated workload can safely ride reclaimable
+# spot capacity (memory-encrypted, attestable). This is the 5-Spot × CoCo punchline.
+#
+# Requires: the scheduled worker host has nested virt (/dev/kvm) and the CoCo
+# operator installed. runtimeClassName is the ONLY real change vs a normal pod.
+# Use kata-qemu-coco-dev on a real VM/host; on kind use kata-clh (QEMU is broken there).
+# 📚 https://confidentialcontainers.org/docs/getting-started/workload/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: confidential-cruncher
+  namespace: default
+  labels:
+    app: confidential-cruncher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: confidential-cruncher
+  template:
+    metadata:
+      labels:
+        app: confidential-cruncher
+      annotations:
+        io.containerd.cri.runtime-handler: kata-qemu-coco-dev
+    spec:
+      runtimeClassName: kata-qemu-coco-dev   # kind users: change to kata-clh
+      tolerations:
+        - key: workshop.example.com/spot
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: workshop.example.com/pool
+                    operator: In
+                    values: ["spot"]
+      containers:
+        - name: cruncher
+          image: nginx:1.29.4
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi

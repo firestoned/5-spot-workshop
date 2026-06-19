@@ -1,0 +1,69 @@
+# GitOps copy — EDIT address: REMOTE_NODE_IP to your real host IP in YOUR FORK
+# before pointing Flux here (Flux cannot template it at apply time).
+# REAL scenario — a time-scheduled k0s WORKER provisioned over SSH onto a remote
+# machine (here: the second Killercoda node / a Colima VM / bare metal).
+#
+# When the window is OPEN, 5-Spot creates on the management cluster:
+#   1. K0sWorkerConfig (bootstrap.cluster.x-k8s.io) — generates the k0s join
+#   2. RemoteMachine   (infrastructure.cluster.x-k8s.io) — the SSH target host
+#   3. Machine         (cluster.x-k8s.io) — ties them to dev-cluster
+# k0smotron's RemoteMachine controller then SSHes to the host and runs the join.
+# 5-Spot itself never SSHes — see https://5spot.finos.org/installation/prerequisites/
+#
+# 📚 ScheduledMachine fields: https://5spot.finos.org/concepts/scheduled-machine/
+#    Schedule syntax:          https://5spot.finos.org/concepts/schedules/
+# ⚠️ DRAFT: confirm RemoteMachine field names (address/port/user/sshKeyRef) against
+#    your installed k0smotron release before the event.
+apiVersion: 5spot.finos.org/v1alpha1
+kind: ScheduledMachine
+metadata:
+  name: business-hours-worker
+  namespace: default
+spec:
+  clusterName: dev-cluster
+
+  schedule:
+    # WORKSHOP: always-on so the worker joins immediately.
+    daysOfWeek: ["mon-sun"]
+    hoursOfDay: ["0-23"]
+    # Real "business hours": daysOfWeek ["mon-fri"], hoursOfDay ["9-17"]
+    timezone: "UTC"
+    enabled: true
+
+  # Bootstrap: a k0s worker join config (k0smotron).
+  bootstrapSpec:
+    apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+    kind: K0sWorkerConfig
+    spec:
+      version: v1.30.0+k0s.0
+
+  # Infrastructure: an SSH-reachable host. ADDRESS is templated by the setup script
+  # to the remote node's IP (e.g. Killercoda node02). The private key lives in the
+  # Secret 'remote-ssh-key' (see remote-ssh-secret.example.yaml).
+  infrastructureSpec:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: RemoteMachine
+    spec:
+      address: "REMOTE_NODE_IP"   # <- replaced at apply time by setup-background.sh
+      port: 22
+      user: root
+      useSudo: false
+      sshKeyRef:
+        name: remote-ssh-key
+
+  # Same labels/taints as the simplified scenario so the Flag 2 workload matches.
+  machineTemplate:
+    labels:
+      workshop.example.com/pool: spot
+    annotations:
+      workshop.example.com/owner: platform-team
+
+  nodeTaints:
+    - key: workshop.example.com/spot
+      value: "true"
+      effect: NoSchedule
+
+  priority: 50
+  gracefulShutdownTimeout: 5m
+  nodeDrainTimeout: 5m
+  killSwitch: false
