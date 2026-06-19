@@ -38,6 +38,26 @@ are none. **Your job is to create one and capture three flags.**
 
 > Stuck waiting? Run `tail -f /opt/5spot-setup.log` (locally non-root: `/tmp/5spot-setup.log`) to watch the pre-bake.
 
+## Handy shortcuts
+
+The pre-bake installs **kubectl aliases**, but a terminal you opened *before* it
+finished won't have them yet — a running shell doesn't re-read its startup files.
+Load them by re-launching your shell (click below), or just open a **new terminal tab**:
+
+```
+exec bash
+```{{exec}}
+
+Then you can type less:
+
+- `k` → `kubectl` (with tab-completion)
+- `kgp` → `get pods`, `kgpa` → `get pods -A`, `kgn` → `get nodes`, `kd` → `describe`, `kl` → `logs`
+- `ksm` → `kubectl get sm -A` (the ScheduledMachines)
+- `kmgmt` → `kubectl --context kind-5spot-mgmt` (the management cluster)
+- `kwl` → `kubectl --kubeconfig ~/dev-cluster.kubeconfig` (the workload cluster)
+
+Once loaded, the readiness check above is just `ksm`, and `kgp -A` lists every pod.
+
 
 ## Join the live scoreboard (optional, 10 seconds)
 

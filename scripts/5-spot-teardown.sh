@@ -10,11 +10,11 @@
 #   ./scripts/5-spot-teardown.sh --env-tier hard --stop-colima  # also stop Colima (macOS)
 #
 # Teardown is best-effort and idempotent: every step tolerates "already gone".
-# Mirrors what killercoda/*/setup-background.sh and Makefile `kind`/`hard` create.
+# Mirrors what workshop/*/setup-background.sh and Makefile `kind`/`hard` create.
 # =============================================================================
 set -uo pipefail
 
-# ---- names/paths (keep in sync with killercoda/*/setup-background.sh) -------
+# ---- names/paths (keep in sync with workshop/*/setup-background.sh) -------
 MGMT_CLUSTER="5spot-mgmt"          # kind create cluster --name 5spot-mgmt
 WORKLOAD_CLUSTER="dev-cluster"     # CAPD/k0smotron workload cluster name
 WORKDIR="$HOME/5spot-workshop"

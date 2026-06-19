@@ -16,9 +16,9 @@ your skill level.
 
 *Full guide: [killercoda-user.md](killercoda-user.md)*
 
-1. Open the scenario link your facilitator shares (or find it on killercoda.com):
-   - *Simplified (CAPD)*: `…/5spot-ctf-capd` — learning shortcut, **not** real-world
-   - *Real (k0s + k0smotron)*: `…/5spot-ctf-k0smotron`
+1. Open the course — **https://killercoda.com/5-spot/course/workshop** — and pick:
+   - *Simplified (CAPD)* — learning shortcut, **not** real-world
+   - *Real (k0s + k0smotron)* — production-representative track
 2. Press **START**. The environment pre-bakes itself (~2–5 min). Read the intro
    while you wait; `tail -f /opt/5spot-setup.log` shows progress.
 3. Each step ends with a **CHECK** button — that's the flag verifier. Green = flag
@@ -40,11 +40,11 @@ Nothing to install. If the session dies (free-tier time limits), just relaunch.
    ./scripts/5-spot-bootstrap.sh --env-tier codespaces
    make kind        # runs the same pre-bake Killercoda users get for free
    ```
-4. Play the steps from `killercoda/5spot-ctf-capd/step*/text.md` in order, running
+4. Play the steps from `workshop/5spot-ctf-capd/step*/text.md` in order, running
    each `verify.sh` yourself to capture flags:
 
    ```bash
-   bash killercoda/5spot-ctf-capd/step1-deploy/verify.sh
+   bash workshop/5spot-ctf-capd/step1-deploy/verify.sh
    ```
 
 ## 🟡 kind (local) / 🔴 Hard (local, production-faithful)
@@ -72,7 +72,7 @@ Then bring it up and play:
 ```bash
 make kind                                        # CAPD environment (simplified)
 # or the real thing:
-bash killercoda/5spot-ctf-k0smotron/setup-background.sh    # k0smotron (needs an SSH target)
+bash workshop/5spot-ctf-k0smotron/setup-background.sh    # k0smotron (needs an SSH target)
 ```
 
 Hard-tier extras (all optional — "Hard" means *real*, not *compiled*):

@@ -10,7 +10,7 @@ Endpoints:
     POST /api/flag    {"player": "...", "flag": "FLAG{...}", "step": "..."}
     GET  /api/scores  raw JSON
 
-Valid flags are read LIVE from killercoda/*/*/verify.sh at startup (same single
+Valid flags are read LIVE from workshop/*/*/verify.sh at startup (same single
 source of truth as everything else — `make salt-flags` just works; restart after
 salting). Unknown flags are rejected unless FLAGBOARD_ALLOW_ANY=1.
 
@@ -29,7 +29,7 @@ ALLOW_ANY = os.environ.get("FLAGBOARD_ALLOW_ANY") == "1"
 
 def load_flags():
     flags = set()
-    for f in ROOT.glob("killercoda/*/*/verify.sh"):
+    for f in ROOT.glob("workshop/*/*/verify.sh"):
         flags |= set(re.findall(r"FLAG\{[A-Z0-9_]+\}", f.read_text()))
     return flags
 

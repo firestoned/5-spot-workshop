@@ -4,7 +4,7 @@
 set -euo pipefail
 URL="${1:?usage: make-qr.sh <url> [outfile.png]}"
 OUT="${2:-qr.png}"
-python3 -c "import qrcode" 2>/dev/null || pip install "qrcode[pil]" --break-system-packages -q
+python3 -c "import qrcode" 2>/dev/null || python3 -m pip install "qrcode[pil]" --break-system-packages -q
 python3 - "$URL" "$OUT" <<'PYEOF'
 import sys, qrcode
 img = qrcode.make(sys.argv[1], box_size=12, border=2)

@@ -12,8 +12,8 @@ gets the two scenarios in this repo live.
    repository (your published `5-spot-workshop`). Killercoda watches a branch and
    **re-deploys on every push** — no manual upload.
 3. Each scenario is a directory containing an `index.json`. This repo ships two:
-   - `killercoda/5spot-ctf-capd/` — 🟢 simplified (Docker provider)
-   - `killercoda/5spot-ctf-k0smotron/` — 🔵 real (k0s + k0smotron, RemoteMachine/SSH)
+   - `workshop/5spot-ctf-capd/` — 🟢 simplified (Docker provider)
+   - `workshop/5spot-ctf-k0smotron/` — 🔵 real (k0s + k0smotron, RemoteMachine/SSH)
 
    In the creator UI, add each as a scenario and point it at that path.
 
@@ -38,8 +38,31 @@ gets the two scenarios in this repo live.
 - **`verify`** runs when the user clicks **CHECK**; exit `0` = pass (flag awarded),
   non-zero = "not yet" with hints.
 - Inline `{{exec}}` after a fenced command makes it click-to-run in the terminal.
-- Files in the scenario dir are available in the environment; we also `git clone`
-  finos/5-spot inside the background script for the live `deploy/` manifests.
+- We also `git clone` finos/5-spot inside the background script for the live
+  `deploy/` manifests.
+
+> **⚠️ Gotcha — `background`/`verify` scripts do NOT run from the scenario dir.**
+> Killercoda copies them to `/var/run/kc-internal/` and runs them there, so
+> `$(dirname "$0")/assets` is **empty** — anything `$0`-relative breaks (this is
+> what crashed an early pre-bake). To get the scenario's `assets/*.yaml` onto the
+> VM you must declare them in the **`assets`** block of `index.json`:
+>
+> ```jsonc
+> "assets": {
+>   "host01": [
+>     { "file": "assets/*.yaml",      "target": "/root/5spot-workshop" },
+>     { "file": "assets/flux/*.yaml", "target": "/root/5spot-workshop/flux" }
+>   ]
+> }
+> ```
+>
+> Killercoda stages those to `host01` before the background script runs. Both
+> scenarios here also keep a **fallback**: if the manifests aren't staged, the
+> background script shallow-clones the workshop repo (`WORKSHOP_REPO_URL`, default
+> the public repo) and copies `workshop/<scenario>/assets/` itself — so a run never
+> depends on `$0` being next to `assets/`. (`text.md` files referenced in
+> `index.json` *are* rendered directly; it's only sibling asset files that need
+> staging.)
 
 Reference: https://killercoda.com/creators
 
@@ -77,6 +100,26 @@ expires), fall back for the **Easy** tier to either:
 The k0smotron scenario is the more likely to exceed limits — keep it as the
 **self-hosted / local** real path and treat Killercoda as best-effort there.
 
+> **⏱️ Session time limits are per-USER, not per-scenario — you can't extend them
+> from `index.json`.** Killercoda caps an environment at **1 hour on FREE** and
+> **4 hours on PLUS** (~$9.99/mo). The cap follows the *attendee's* membership, not
+> the creator's, so there is **no scenario field** to lengthen it. When the timer
+> ends the environment is destroyed and the user must reload for a **fresh** one —
+> **all cluster state is lost** (PLUS also allows 3 concurrent envs vs FREE's 1).
+>
+> Planning consequences:
+> - Assume most attendees are on **FREE = 60 minutes**. The 🟢 **Easy (CAPD)** run
+>   must finish — pre-bake *plus* all three flags — inside that window. Smoke-test
+>   end-to-end against a 60-min budget, not just "does it boot".
+> - The 🔵 **REAL (k0smotron)** scenario won't comfortably fit 60 min; it needs
+>   attendees on **PLUS (4h)** *or* a non-Killercoda tier.
+> - Need a guaranteed multi-hour run for **everyone**? Use a tier with **no
+>   Killercoda timer**: **Codespaces**, **local kind**, or the **pre-baked VM**
+>   fallback above — those run as long as you want.
+> - Seeing "60 / 120 min" while paying for PLUS? Make sure you're **signed into the
+>   PLUS account** in that browser (60 min is the FREE cap); the number on a course
+>   card can also be a descriptive *estimate*, distinct from the real plan-based cap.
+
 ## 5. Test locally before pushing
 
 You don't need to push to iterate. Killercoda renders straight Markdown, and the
@@ -84,9 +127,9 @@ scripts are plain bash:
 
 ```bash
 # Validate structure
-python3 -c "import json; json.load(open('killercoda/5spot-ctf-capd/index.json'))"
-bash -n killercoda/5spot-ctf-capd/setup-background.sh
-bash -n killercoda/5spot-ctf-capd/*/verify.sh
+python3 -c "import json; json.load(open('workshop/5spot-ctf-capd/index.json'))"
+bash -n workshop/5spot-ctf-capd/setup-background.sh
+bash -n workshop/5spot-ctf-capd/*/verify.sh
 ```
 
 Then push to your watched branch; Killercoda updates within seconds.

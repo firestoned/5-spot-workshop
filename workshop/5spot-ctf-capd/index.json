@@ -32,6 +32,12 @@
       "text": "finish.md"
     }
   },
+  "assets": {
+    "host01": [
+      { "file": "assets/*.yaml", "target": "/root/5spot-workshop" },
+      { "file": "assets/flux/*.yaml", "target": "/root/5spot-workshop/flux" }
+    ]
+  },
   "backend": {
     "imageid": "ubuntu"
   },

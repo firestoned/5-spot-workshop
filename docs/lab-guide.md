@@ -6,7 +6,7 @@ just deploy 5-Spot and exercise the full machine lifecycle.
 
 Environment: any tier from [quickstart-tiers.md](quickstart-tiers.md). On
 Killercoda the cluster is pre-baked; locally run
-`bash killercoda/5spot-ctf-capd/setup-background.sh` (simplified) or the
+`bash workshop/5spot-ctf-capd/setup-background.sh` (simplified) or the
 k0smotron one (real). Paths below assume the pre-bake (`$HOME/5spot-workshop/`,
 `$HOME/dev-cluster.kubeconfig`).
 
@@ -93,14 +93,14 @@ Also meet the [emergency reclaim](https://5spot.finos.org/concepts/emergency-rec
 Manage the `ScheduledMachine` from Git instead of kubectl — install
 [flux-operator](https://github.com/controlplaneio-fluxcd/flux-operator) and point
 a `GitRepository` + `Kustomization` at the `assets/flux/` overlay. Full commands:
-`killercoda/<scenario>/step4-flux-bonus/text.md` (ignore the `{{exec}}` markers —
+`workshop/<scenario>/step4-flux-bonus/text.md` (ignore the `{{exec}}` markers —
 they're Killercoda click-to-run sugar).
 
 ## 6. Optional: Confidential Containers
 
 On a host with nested virtualisation, run the same compliant workload inside a
 TEE/microVM on the scheduled node — `runtimeClassName` is the only change. Full
-walkthrough and prerequisites: `killercoda/5spot-ctf-k0smotron/step5-coco/text.md`
+walkthrough and prerequisites: `workshop/5spot-ctf-k0smotron/step5-coco/text.md`
 and [confidentialcontainers.org](https://confidentialcontainers.org/docs/getting-started/).
 
 ## 7. Clean up

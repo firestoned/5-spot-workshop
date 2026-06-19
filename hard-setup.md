@@ -37,13 +37,13 @@ Pick one:
 ## Jump in
 
 ```bash
-REMOTE_NODE_HOST=<ip-or-hostname> bash killercoda/5spot-ctf-k0smotron/setup-background.sh
+REMOTE_NODE_HOST=<ip-or-hostname> bash workshop/5spot-ctf-k0smotron/setup-background.sh
 ```
 
 The pre-bake stands up: kind management cluster → cert-manager → CAPI core +
 k0smotron providers → 5-Spot controller → SSH key authorised on your target →
 hosted `K0smotronControlPlane` for `dev-cluster`. Then play
-`killercoda/5spot-ctf-k0smotron/step*/text.md` in order, verifying with each
+`workshop/5spot-ctf-k0smotron/step*/text.md` in order, verifying with each
 step's `verify.sh`. Steps 4 (⭐ Flux) and 5 (⭐⭐ CoCo) are your bonuses.
 
 Optional flexes:

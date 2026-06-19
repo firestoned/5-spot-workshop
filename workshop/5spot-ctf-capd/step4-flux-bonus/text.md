@@ -39,7 +39,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m
-  url: https://github.com/YOUR-ORG/5-spot-workshop
+  url: https://github.com/firestoned/5-spot-workshop
   ref:
     branch: main
 ---
@@ -53,7 +53,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: workshop
-  path: ./killercoda/5spot-ctf-capd/assets/flux
+  path: ./workshop/5spot-ctf-capd/assets/flux
   prune: true
   targetNamespace: default
 EOF

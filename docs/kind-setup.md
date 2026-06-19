@@ -30,11 +30,11 @@ make kind                                       # full pre-bake: mgmt cluster + 
 ```
 
 Pre-bake takes ~5–10 minutes (longer on first run while images pull). Then play
-the steps from `killercoda/5spot-ctf-capd/step*/text.md` — copy the commands
+the steps from `workshop/5spot-ctf-capd/step*/text.md` — copy the commands
 (skip the `{{exec}}` sugar) and capture flags with each step's verifier:
 
 ```bash
-bash killercoda/5spot-ctf-capd/step1-deploy/verify.sh
+bash workshop/5spot-ctf-capd/step1-deploy/verify.sh
 ```
 
 *(Optional)* scoreboard join:

@@ -36,6 +36,27 @@ Watch the pre-bake with `tail -f /opt/5spot-setup.log` (locally non-root: `/tmp/
 > the 🟢 simplified (Docker) track if you want to learn the lifecycle first.
 
 
+## Handy shortcuts
+
+The pre-bake installs **kubectl aliases**, but a terminal you opened *before* it
+finished won't have them yet — a running shell doesn't re-read its startup files.
+Load them by re-launching your shell (click below), or just open a **new terminal tab**:
+
+```
+exec bash
+```{{exec}}
+
+Then you can type less:
+
+- `k` → `kubectl` (with tab-completion)
+- `kgp` → `get pods`, `kgpa` → `get pods -A`, `kgn` → `get nodes`, `kd` → `describe`, `kl` → `logs`
+- `ksm` → `kubectl get sm -A` (the ScheduledMachines)
+- `kmgmt` → `kubectl --context kind-5spot-mgmt` (the management cluster on node01)
+- `kwl` → `kubectl --kubeconfig ~/dev-cluster.kubeconfig` (the hosted workload cluster)
+
+Once loaded, `ksm` is the quick readiness check and `kgp -A` lists every pod.
+
+
 ## Join the live scoreboard (optional, 10 seconds)
 
 If the facilitator shared a scoreboard URL/QR, register once and every flag you

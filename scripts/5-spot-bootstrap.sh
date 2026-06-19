@@ -14,7 +14,7 @@
 # =============================================================================
 set -uo pipefail
 
-# ---- pins (keep in sync with killercoda/*/setup-background.sh) --------------
+# ---- pins (keep in sync with workshop/*/setup-background.sh) --------------
 KUBECTL_VERSION="v1.31.0"
 KIND_VERSION="v0.24.0"
 CLUSTERCTL_VERSION="v1.9.5"     # v1.9.x serves cluster.x-k8s.io/v1beta1 (5-Spot needs this)

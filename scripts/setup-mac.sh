@@ -59,7 +59,7 @@ EOF
 if [ "$MODE" = up ]; then
   echo
   echo "── Bringing up the k0smotron stack locally (this takes several minutes) ──"
-  REMOTE_NODE_HOST="${REMOTE_NODE_HOST:-}" bash killercoda/5spot-ctf-k0smotron/setup-background.sh
+  REMOTE_NODE_HOST="${REMOTE_NODE_HOST:-}" bash workshop/5spot-ctf-k0smotron/setup-background.sh
 fi
 
 echo

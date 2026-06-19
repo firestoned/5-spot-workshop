@@ -4,13 +4,17 @@ You chose the cloud devbox: every tool pre-installed and pinned, but *you* run
 the cluster bring-up — the full bootstrap experience without touching your
 laptop. The right home for Windows users.
 
+> **Facilitator?** Hosting this tier (prebuilds, machine-type & cost policy,
+> pre-event smoke test) is covered in
+> [codespaces-setup-facilitator.md](codespaces-setup-facilitator.md).
+
 ## Jump in
 
 1. Open the workshop repo on GitHub → **Code ▸ Codespaces ▸ Create codespace on
    main**.
-2. **Pick the machine type: 8-core / 16 GB** (click the `…` ▸ *New with
-   options…* if you're not prompted). The 2-core default cannot hold
-   kind + CAPI + a workload cluster.
+2. **Machine type: 4-core / 16 GB** — the devcontainer requests it automatically
+   (it's the size the free tier offers). The 2-core default cannot hold
+   kind + CAPI + a workload cluster; 4-core is the free sweet spot.
 3. Wait for the container build (a few minutes; with prebuilds enabled it's
    seconds). The devcontainer ships docker-in-docker, kubectl 1.31, helm, kind
    v0.24.0, **clusterctl v1.9.5** (the v1beta1-compatible line 5-Spot needs),
@@ -23,18 +27,18 @@ laptop. The right home for Windows users.
    ```
 5. *(Optional)* Join the scoreboard:
    `printf 'PLAYER=%s\nFLAGBOARD_URL=%s\n' "team" "https://…" > ~/.flagboard`
-6. Play the steps in order from `killercoda/5spot-ctf-capd/step*/text.md`
+6. Play the steps in order from `workshop/5spot-ctf-capd/step*/text.md`
    (ignore the `{{exec}}` markers — copy/paste the commands), and capture each
    flag by running its verifier:
 
    ```bash
-   bash killercoda/5spot-ctf-capd/step1-deploy/verify.sh
+   bash workshop/5spot-ctf-capd/step1-deploy/verify.sh
    ```
 
 ## Tier-specific gotchas
 
 - **Free quota**: personal GitHub accounts get a monthly pool of core-hours
-  (≈15 hrs on an 8-core machine) and the meter runs while the codespace is
+  (≈30 hrs on a 4-core machine) and the meter runs while the codespace is
   active — plenty for the workshop; **stop the codespace** afterwards
   (Code ▸ Codespaces ▸ Stop) so it doesn't idle-burn.
 - Everything runs *inside* the codespace — `kubectl` in the built-in terminal,

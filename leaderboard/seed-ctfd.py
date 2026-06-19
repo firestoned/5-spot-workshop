@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Seed a CTFd instance with the 5-Spot workshop challenges.
 
-Flags are read live from killercoda/*/*/verify.sh so the leaderboard can never
+Flags are read live from workshop/*/*/verify.sh so the leaderboard can never
 drift from the verifiers (including after `make salt-flags`).
 
 Usage:
@@ -26,19 +26,19 @@ def flags_from(*globs):
 CHALLENGES = [
     dict(name="Flag 1 — Open the window", value=100, category="core",
          description="Apply the ScheduledMachine and get the scheduled worker to join the workload cluster and go Ready.\n\nDocs: https://5spot.finos.org/concepts/scheduled-machine/",
-         flags=flags_from("killercoda/*/step1-deploy/verify.sh")),   # both CAPD + k0smotron variants accepted
+         flags=flags_from("workshop/*/step1-deploy/verify.sh")),   # both CAPD + k0smotron variants accepted
     dict(name="Flag 2 — Stay compliant", value=100, category="core",
          description="Prove only taint-tolerating workloads ride the spot node.\n\nDocs: https://5spot.finos.org/concepts/",
-         flags=flags_from("killercoda/*/step2-taint/verify.sh")),
+         flags=flags_from("workshop/*/step2-taint/verify.sh")),
     dict(name="Flag 3 — Survive the drain", value=100, category="core",
          description="Close the window; graceful cordon→drain→delete to phase Inactive.\n\nDocs: https://5spot.finos.org/concepts/machine-lifecycle/",
-         flags=flags_from("killercoda/*/step3-drain/verify.sh")),
+         flags=flags_from("workshop/*/step3-drain/verify.sh")),
     dict(name="⭐ Bonus — GitOps with Flux", value=150, category="bonus",
          description="The ScheduledMachine is reconciled by a Flux Kustomization, not kubectl apply.",
-         flags=flags_from("killercoda/*/step4-flux-bonus/verify.sh")),
+         flags=flags_from("workshop/*/step4-flux-bonus/verify.sh")),
     dict(name="⭐⭐ Bonus — Confidential Containers", value=200, category="bonus",
          description="A sensitive workload runs in a TEE/microVM ON the reclaimable spot node (k0smotron track; needs /dev/kvm).",
-         flags=flags_from("killercoda/*/step5-coco/verify.sh")),
+         flags=flags_from("workshop/*/step5-coco/verify.sh")),
 ]
 
 def api(method, path, payload=None):

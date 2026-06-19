@@ -5,7 +5,8 @@ pre-bakes itself while you read the intro.
 
 ## Jump in
 
-1. Open the scenario link your facilitator shared:
+1. Open the course — **https://killercoda.com/5-spot/course/workshop** — and pick
+   a scenario:
    - **Simplified (CAPD)** — learn the lifecycle fast; explicitly *not* a
      real-world setup.
    - **Real (k0s + k0smotron)** — the production-representative track.

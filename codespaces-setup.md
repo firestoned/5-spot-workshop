@@ -23,12 +23,12 @@ laptop. The right home for Windows users.
    ```
 5. *(Optional)* Join the scoreboard:
    `printf 'PLAYER=%s\nFLAGBOARD_URL=%s\n' "team" "https://…" > ~/.flagboard`
-6. Play the steps in order from `killercoda/5spot-ctf-capd/step*/text.md`
+6. Play the steps in order from `workshop/5spot-ctf-capd/step*/text.md`
    (ignore the `{{exec}}` markers — copy/paste the commands), and capture each
    flag by running its verifier:
 
    ```bash
-   bash killercoda/5spot-ctf-capd/step1-deploy/verify.sh
+   bash workshop/5spot-ctf-capd/step1-deploy/verify.sh
    ```
 
 ## Tier-specific gotchas

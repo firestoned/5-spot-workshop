@@ -25,6 +25,68 @@ CERT_MANAGER_VERSION="v1.15.3"
 MGMT="kind-5spot-mgmt"
 REMOTE_NODE_HOST="${REMOTE_NODE_HOST:-node02}"  # Killercoda 2nd node; override locally
 
+# ---- Attendee quality-of-life: kubectl aliases + completion ----------------
+# Appended to ~/.bashrc so they're live in every terminal the attendee opens.
+# Idempotent (marker-guarded). Keep this in sync with the CAPD scenario.
+install_shell_aliases() {
+  # Capture the block once, then install it to a SYSTEM-WIDE rc so every
+  # interactive shell sees it regardless of $HOME. Killercoda may run this
+  # background script with HOME unset (so "${HOME}/.bashrc" would land in the
+  # wrong place), and Ubuntu's /etc/profile also sources /etc/bash.bashrc for
+  # login shells — so /etc/bash.bashrc covers both shell types.
+  local block; block="$(cat <<'ALIASES'
+
+# >>> 5-spot kubectl aliases >>>
+# kubectl bash-completion, and make `k` complete just like kubectl.
+command -v kubectl >/dev/null && { source <(kubectl completion bash); complete -o default -F __start_kubectl k; }
+
+alias k='kubectl'
+alias kg='kubectl get'
+alias kp='kubectl get pods'
+alias kgp='kubectl get pods'
+alias kgpa='kubectl get pods -A'
+alias kgpo='kubectl get pods -o wide'
+alias kgpw='kubectl get pods -w'
+alias kgs='kubectl get svc'
+alias kgn='kubectl get nodes'
+alias kgno='kubectl get nodes -o wide'
+alias kgd='kubectl get deploy'
+alias kga='kubectl get all'
+alias kgaa='kubectl get all -A'
+alias kge='kubectl get events --sort-by=.lastTimestamp'
+alias kd='kubectl describe'
+alias kdp='kubectl describe pod'
+alias kdn='kubectl describe node'
+alias kl='kubectl logs'
+alias klf='kubectl logs -f'
+alias ke='kubectl exec -it'
+alias kaf='kubectl apply -f'
+alias kdel='kubectl delete'
+alias kdelf='kubectl delete -f'
+alias kx='kubectl config use-context'
+alias kctx='kubectl config get-contexts'
+alias kns='kubectl config set-context --current --namespace'
+
+# 5-Spot specifics: the ScheduledMachine CRD, the mgmt context, the workload cluster.
+alias ksm='kubectl get sm -A'
+alias kdsm='kubectl describe sm'
+alias kmgmt='kubectl --context kind-5spot-mgmt'
+alias kwl='kubectl --kubeconfig $HOME/dev-cluster.kubeconfig'
+# <<< 5-spot kubectl aliases <<<
+ALIASES
+)"
+  local t
+  for t in /etc/bash.bashrc "${HOME:-/root}/.bashrc"; do
+    grep -q '5-spot kubectl aliases' "$t" 2>/dev/null && continue
+    if { [ -e "$t" ] && [ -w "$t" ]; } || { [ ! -e "$t" ] && [ -w "$(dirname "$t")" ]; }; then
+      printf '\n%s\n' "$block" >> "$t"
+    else
+      printf '\n%s\n' "$block" | sudo tee -a "$t" >/dev/null 2>&1 || continue
+    fi
+    echo "==> Installed kubectl aliases (k, kgp, ksm, kwl, …) into $t"
+  done
+}
+
 # ---- Tooling ---------------------------------------------------------------
 echo "==> Installing kind, kubectl, clusterctl"
 curl -sSLo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64; chmod +x /usr/local/bin/kind
@@ -34,8 +96,28 @@ curl -sSLo /usr/local/bin/clusterctl "https://github.com/kubernetes-sigs/cluster
 echo "==> Installing helm (Flux bonus + CoCo bonus)"
 curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash || echo "helm install failed (bonus steps will need it)"
 
-ASSETS="$(cd "$(dirname "$0")/assets" && pwd)"
-WORKDIR="$HOME/5spot-workshop"; mkdir -p "$WORKDIR"; cp -r "$ASSETS/." "$WORKDIR/"
+install_shell_aliases   # kubectl aliases + completion for the attendee's terminal
+
+# Resolve the scenario's assets/ robustly — see the CAPD setup script for the
+# full rationale. On Killercoda the background script runs from
+# /var/run/kc-internal, so $0 is NOT next to assets/; fall back accordingly.
+SCENARIO="5spot-ctf-k0smotron"
+WORKSHOP_REPO_URL="${WORKSHOP_REPO_URL:-https://github.com/firestoned/5-spot-workshop.git}"
+WORKDIR="$HOME/5spot-workshop"; mkdir -p "$WORKDIR"
+LOCAL_ASSETS="$(dirname "$0")/assets"
+if [ -d "$LOCAL_ASSETS" ]; then
+  cp -r "$LOCAL_ASSETS/." "$WORKDIR/"
+fi
+if [ ! -f "$WORKDIR/workload-cluster-k0smotron.yaml" ]; then
+  echo "==> Assets not staged locally — fetching from $WORKSHOP_REPO_URL"
+  tmp="$(mktemp -d)"
+  git clone --depth 1 "$WORKSHOP_REPO_URL" "$tmp" >/dev/null 2>&1 \
+    && cp -r "$tmp/workshop/$SCENARIO/assets/." "$WORKDIR/"
+  rm -rf "$tmp"
+fi
+for need in workload-cluster-k0smotron.yaml scheduledmachine-k0smotron.yaml; do
+  [ -f "$WORKDIR/$need" ] || { echo "✗ required manifest '$need' not found in $WORKDIR — check the index.json 'assets' block or WORKSHOP_REPO_URL"; exit 1; }
+done
 if git -C "$HOME/5-spot" rev-parse --git-dir >/dev/null 2>&1; then
   git -C "$HOME/5-spot" fetch --depth 1 origin && git -C "$HOME/5-spot" reset --hard origin/HEAD 2>/dev/null || true
 else
@@ -66,10 +148,20 @@ done
 echo "==> Loading 5-Spot controller ${FIVESPOT_IMAGE}"
 docker pull "$FIVESPOT_IMAGE"; kind load docker-image "$FIVESPOT_IMAGE" --name 5spot-mgmt
 kubectl --context "$MGMT" apply -f $HOME/5-spot/deploy/crds/
+# Create the namespace first and wait for it to register. A single recursive apply
+# can submit namespaced objects (configmap/deployment) before the freshly created
+# namespace has propagated, failing with "namespaces 5spot-system not found".
+kubectl --context "$MGMT" create namespace 5spot-system --dry-run=client -o yaml | kubectl --context "$MGMT" apply -f -
+kubectl --context "$MGMT" wait --for=jsonpath='{.status.phase}'=Active ns/5spot-system --timeout=30s
 kubectl --context "$MGMT" apply -R -f $HOME/5-spot/deploy/deployment/
 kubectl --context "$MGMT" apply -f $HOME/5-spot/deploy/admission/validatingadmissionpolicy.yaml || true
 kubectl --context "$MGMT" apply -f $HOME/5-spot/deploy/admission/validatingadmissionpolicybinding.yaml || true
 kubectl --context "$MGMT" -n 5spot-system set image deployment/5spot-controller "controller=${FIVESPOT_IMAGE}"
+# Killercoda's single kind node is CPU-tight; the upstream manifest's CPU *request*
+# is sized for a roomier cluster, so the pod fails to schedule ("Insufficient cpu").
+# Requests (not limits) drive scheduling — shrink the request so it fits anywhere.
+kubectl --context "$MGMT" -n 5spot-system patch deployment/5spot-controller --type=strategic \
+  -p '{"spec":{"template":{"spec":{"containers":[{"name":"controller","resources":{"requests":{"cpu":"10m","memory":"64Mi"}}}]}}}}' || true
 kubectl --context "$MGMT" -n 5spot-system rollout status deployment/5spot-controller --timeout=180s
 
 # ---- SSH key from mgmt -> remote node (the RemoteMachine target) ------------
