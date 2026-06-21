@@ -19,14 +19,15 @@ post_flag() {
 # -----------------------------------------------------------------------------
 # Flag 2 — the spot-tolerating workload is Running ON the tainted spot node.
 WL=$HOME/dev-cluster.kubeconfig
-NODE=business-hours-worker
+# CAPD registers the node as <cluster>-<scheduledmachine> — match by suffix.
+NODE=$(kubectl --kubeconfig "$WL" get nodes -o name 2>/dev/null | sed 's|^node/||' | grep -E 'business-hours-worker$' | head -1)
 
 phase=$(kubectl --kubeconfig "$WL" get pods -l app=batch-cruncher \
   -o jsonpath='{.items[0].status.phase}' 2>/dev/null || true)
 onnode=$(kubectl --kubeconfig "$WL" get pods -l app=batch-cruncher \
   -o jsonpath='{.items[0].spec.nodeName}' 2>/dev/null || true)
 
-if [ "$phase" = "Running" ] && [ "$onnode" = "$NODE" ]; then
+if [ "$phase" = "Running" ] && [ -n "$NODE" ] && [ "$onnode" = "$NODE" ]; then
   echo "✅ batch-cruncher is Running on $NODE — it tolerated the spot taint."
   echo "🏁 FLAG{COMPLIANT_WORKLOAD_RIDES_SPOT}"
   post_flag "FLAG{COMPLIANT_WORKLOAD_RIDES_SPOT}"

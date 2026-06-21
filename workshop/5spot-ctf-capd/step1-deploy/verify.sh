@@ -19,12 +19,15 @@ post_flag() {
 # -----------------------------------------------------------------------------
 # Flag 1 — the scheduled worker has joined the workload cluster and is Ready.
 WL=$HOME/dev-cluster.kubeconfig
-NODE=business-hours-worker
+# CAPD registers the node as <cluster>-<scheduledmachine> (e.g.
+# dev-cluster-business-hours-worker), so match by suffix instead of hardcoding the
+# cluster prefix — the worker is the only node ending in "business-hours-worker".
+NODE=$(kubectl --kubeconfig "$WL" get nodes -o name 2>/dev/null | sed 's|^node/||' | grep -E 'business-hours-worker$' | head -1)
 
 status=$(kubectl --kubeconfig "$WL" get node "$NODE" \
   -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{end}' 2>/dev/null || true)
 
-if [ "$status" = "True" ]; then
+if [ -n "$NODE" ] && [ "$status" = "True" ]; then
   echo "✅ $NODE is Ready — 5-Spot opened the window and the worker joined."
   echo "🏁 FLAG{5SPOT_WINDOW_OPEN_WORKER_JOINED}"
   post_flag "FLAG{5SPOT_WINDOW_OPEN_WORKER_JOINED}"
