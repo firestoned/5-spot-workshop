@@ -124,11 +124,15 @@ live_kind() {
     # Flag 2
     kubectl --kubeconfig "$HOME/dev-cluster.kubeconfig" apply -f workshop/5spot-ctf-capd/assets/spot-workload.yaml \
       || kubectl --kubeconfig "$HOME/dev-cluster.kubeconfig" apply -f workshop/5spot-ctf-capd/assets/spot-workload.yaml 2>/dev/null
-    # Poll like Flag 1/3 — the batch-cruncher pull + schedule onto the spot node
-    # can take longer than a fixed sleep.
+    # Poll like Flag 1/3, and RE-APPLY each round: on macOS/colima the workload
+    # API (reached via a 127.0.0.1 port-forward) can transiently time out, so the
+    # first apply may not land. Re-applying self-heals; it's idempotent.
     deadline=$((SECONDS+300))
     until bash workshop/5spot-ctf-capd/step2-taint/verify.sh >/dev/null 2>&1; do
-      [ $SECONDS -gt $deadline ] && break; sleep 15; done
+      [ $SECONDS -gt $deadline ] && break
+      kubectl --kubeconfig "$HOME/dev-cluster.kubeconfig" apply -f workshop/5spot-ctf-capd/assets/spot-workload.yaml >/dev/null 2>&1 || true
+      sleep 15
+    done
     bash workshop/5spot-ctf-capd/step2-taint/verify.sh && ok "FLAG 2 verifier passes" || bad "Flag 2 failed"
     # Flag 3
     kubectl --context kind-5spot-mgmt patch sm business-hours-worker --type merge -p '{"spec":{"schedule":{"enabled":false}}}' >/dev/null 2>&1
