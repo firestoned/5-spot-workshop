@@ -1,7 +1,7 @@
 # GitOps copy — EDIT address: REMOTE_NODE_IP to your real host IP in YOUR FORK
 # before pointing Flux here (Flux cannot template it at apply time).
 # REAL scenario — a time-scheduled k0s WORKER provisioned over SSH onto a remote
-# machine (here: the second Killercoda node / a Colima VM / bare metal).
+# machine (here: a second lab node / a Colima VM / bare metal).
 #
 # When the window is OPEN, 5-Spot creates on the management cluster:
 #   1. K0sWorkerConfig (bootstrap.cluster.x-k8s.io) — generates the k0s join
@@ -11,10 +11,26 @@
 # 5-Spot itself never SSHes — see https://5spot.finos.org/installation/prerequisites/
 #
 # 📚 ScheduledMachine fields: https://5spot.finos.org/concepts/scheduled-machine/
-#    Schedule syntax:          https://5spot.finos.org/concepts/schedules/
+#    Schedule provider (ADR 0009): https://5spot.finos.org/concepts/schedules/
 # ⚠️ DRAFT: confirm RemoteMachine field names (address/port/user/sshKeyRef) against
 #    your installed k0smotron release before the event.
-apiVersion: 5spot.finos.org/v1alpha1
+#
+# Since ADR 0009 the day/hour window lives on a TimeBasedSpotSchedule PROVIDER object
+# (first doc); the ScheduledMachine references it by name.
+apiVersion: spotschedules.5spot.finos.org/v1alpha1
+kind: TimeBasedSpotSchedule
+metadata:
+  name: business-hours
+  namespace: default
+spec:
+  # WORKSHOP: always-on so the worker joins immediately.
+  daysOfWeek: ["mon-sun"]
+  hoursOfDay: ["0-23"]
+  # Real "business hours": daysOfWeek ["mon-fri"], hoursOfDay ["9-17"]
+  timezone: "UTC"
+  enabled: true
+---
+apiVersion: 5spot.finos.org/v1beta1
 kind: ScheduledMachine
 metadata:
   name: business-hours-worker
@@ -22,24 +38,33 @@ metadata:
 spec:
   clusterName: dev-cluster
 
+  # Administrative master switch (ADR 0009); defaults to true.
+  enabled: true
+
+  # 5-Spot reaches the HOSTED control plane (to taint/drain the Node) DIRECTLY via this
+  # kubeconfig, built by setup-background.sh: in-cluster NodePort endpoint (:30443), REAL CA
+  # + client cert kept (mTLS identity). setup-background.sh also adds an egress NetworkPolicy
+  # letting the controller reach :30443 (its default policy only allows the mgmt apiserver).
+  kubeconfigSecretRef:
+    name: dev-cluster-kubeconfig-5spot
+    key: value
+
+  # Required reference to the TimeBasedSpotSchedule provider above (same namespace).
   schedule:
-    # WORKSHOP: always-on so the worker joins immediately.
-    daysOfWeek: ["mon-sun"]
-    hoursOfDay: ["0-23"]
-    # Real "business hours": daysOfWeek ["mon-fri"], hoursOfDay ["9-17"]
-    timezone: "UTC"
-    enabled: true
+    apiVersion: spotschedules.5spot.finos.org/v1alpha1
+    kind: TimeBasedSpotSchedule
+    name: business-hours
 
   # Bootstrap: a k0s worker join config (k0smotron).
   bootstrapSpec:
     apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
     kind: K0sWorkerConfig
     spec:
-      version: v1.30.0+k0s.0
+      version: v1.35.5+k0s.0
 
   # Infrastructure: an SSH-reachable host. ADDRESS is templated by the setup script
-  # to the remote node's IP (e.g. Killercoda node02). The private key lives in the
-  # Secret 'remote-ssh-key' (see remote-ssh-secret.example.yaml).
+  # to the remote node's IP (e.g. node-02 on a multi-node lab). The private key lives
+  # in the Secret 'remote-ssh-key' (see remote-ssh-secret.example.yaml).
   infrastructureSpec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: RemoteMachine

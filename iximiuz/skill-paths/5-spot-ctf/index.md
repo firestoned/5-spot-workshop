@@ -12,7 +12,7 @@ description: |
 
 categories:
   - kubernetes
-  - cluster-api
+  - containers
 
 tagz:
   - 5-spot

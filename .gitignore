@@ -1,3 +1,6 @@
 .DS_Store
 __pycache__/
 *.pyc
+
+# labctl installer drops its release tarball in CWD before unpacking
+labctl_*.tar.gz

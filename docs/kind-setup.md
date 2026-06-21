@@ -19,7 +19,7 @@ works offline once images are cached, and nothing leaves your machine.
   ./scripts/5-spot-bootstrap.sh --env-tier kind
   ```
 - **Windows**: this tier will fight you (WSL + nested Docker). Use
-  [Codespaces](codespaces-setup.md) or [Killercoda](killercoda-user.md) instead.
+  [Codespaces](codespaces-setup.md) or the [iximiuz browser lab](https://labs.iximiuz.com/skill-paths/5-spot-ctf-dc5a4cf4) instead.
 
 ## Jump in
 

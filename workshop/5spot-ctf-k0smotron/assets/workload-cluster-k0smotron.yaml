@@ -38,11 +38,19 @@ metadata:
   name: dev-cluster-cp
   namespace: default
 spec:
-  version: v1.30.0-k0s.0
+  version: v1.35.5-k0s.0
+  # The control plane runs as pods in the mgmt (kind) cluster, but workers join from a
+  # separate MiniLAN node. Advertise node-01's LAN IP (NOT the kind-internal docker IP
+  # k0smotron would otherwise auto-detect) so the worker's join config + the API-server
+  # cert SANs use an address the worker can actually reach. Substituted by
+  # setup-background.sh; paired with kind extraPortMappings publishing these NodePorts.
+  externalAddress: NODE01_IP
   persistence:
     type: emptyDir
   service:
     type: NodePort
+    apiPort: 30443
+    konnectivityPort: 30132
 ---
 # Infrastructure cluster for SSH-provisioned (remote) machines.
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

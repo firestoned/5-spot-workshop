@@ -8,15 +8,13 @@ name: k0smotron
 createdAt: 2026-06-19
 updatedAt: 2026-06-19
 
-# <!-- TODO(verify at publish): same as unit-10 — confirm the `challenges:` map
-#      and `::card` `:content:` reference shape against the live skill-path docs. -->
 challenges:
   5spot-ctf-k0smotron: {}
 ---
 
 ::card
 ---
-:content: challenges.5spot-ctf-k0smotron
+:challenge: challenges.5spot-ctf-k0smotron
 ---
 ::
 

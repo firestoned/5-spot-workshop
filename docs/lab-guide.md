@@ -4,8 +4,8 @@ Prefer a straight tutorial over the CTF? This is the same material as the
 scenarios, as a linear lab. Skip the flags, the leaderboard, and the theming —
 just deploy 5-Spot and exercise the full machine lifecycle.
 
-Environment: any tier from [quickstart-tiers.md](quickstart-tiers.md). On
-Killercoda the cluster is pre-baked; locally run
+Environment: any tier from [quickstart-tiers.md](quickstart-tiers.md). In the
+browser lab the cluster is pre-baked; locally run
 `bash workshop/5spot-ctf-capd/setup-background.sh` (simplified) or the
 k0smotron one (real). Paths below assume the pre-bake (`$HOME/5spot-workshop/`,
 `$HOME/dev-cluster.kubeconfig`).
@@ -93,8 +93,8 @@ Also meet the [emergency reclaim](https://5spot.finos.org/concepts/emergency-rec
 Manage the `ScheduledMachine` from Git instead of kubectl — install
 [flux-operator](https://github.com/controlplaneio-fluxcd/flux-operator) and point
 a `GitRepository` + `Kustomization` at the `assets/flux/` overlay. Full commands:
-`workshop/<scenario>/step4-flux-bonus/text.md` (ignore the `{{exec}}` markers —
-they're Killercoda click-to-run sugar).
+`workshop/<scenario>/step4-flux-bonus/text.md` (ignore any `{{exec}}` markers —
+they're browser-lab click-to-run sugar).
 
 ## 6. Optional: Confidential Containers
 
@@ -106,7 +106,7 @@ and [confidentialcontainers.org](https://confidentialcontainers.org/docs/getting
 ## 7. Clean up
 
 ```bash
-kind delete cluster --name 5spot-mgmt        # locally; Killercoda just expires
+kind delete cluster --name 5spot-mgmt        # locally; browser-lab VMs just expire
 ```
 
 ## Where to go next

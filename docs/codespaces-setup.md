@@ -1,55 +1,42 @@
-# 🟡 Codespaces tier — jump in (browser, full bootstrap)
+# 🟡 Codespaces — jump in (browser, nothing to install)
 
-You chose the cloud devbox: every tool pre-installed and pinned, but *you* run
-the cluster bring-up — the full bootstrap experience without touching your
-laptop. The right home for Windows users.
+A cloud devbox with every tool pre-installed. You run the cluster; your laptop
+stays clean. Best path for Windows.
 
-> **Facilitator?** Hosting this tier (prebuilds, machine-type & cost policy,
-> pre-event smoke test) is covered in
-> [codespaces-setup-facilitator.md](codespaces-setup-facilitator.md).
+## After your Codespace opens — 3 steps
 
-## Jump in
+```bash
+# 1) Bring the cluster up (~5–10 min the first time)
+./scripts/5-spot-bootstrap.sh --env-tier codespaces && make kind
 
-1. Open the workshop repo on GitHub → **Code ▸ Codespaces ▸ Create codespace on
-   main**.
-2. **Machine type: 4-core / 16 GB** — the devcontainer requests it automatically
-   (it's the size the free tier offers). The 2-core default cannot hold
-   kind + CAPI + a workload cluster; 4-core is the free sweet spot.
-3. Wait for the container build (a few minutes; with prebuilds enabled it's
-   seconds). The devcontainer ships docker-in-docker, kubectl 1.31, helm, kind
-   v0.24.0, **clusterctl v1.9.5** (the v1beta1-compatible line 5-Spot needs),
-   and flux.
-4. Verify, then bring the environment up yourself:
+# 2) Capture a flag (green ✓ = captured)
+bash workshop/5spot-ctf-capd/step1-deploy/verify.sh
+```
 
-   ```bash
-   ./scripts/5-spot-bootstrap.sh --env-tier codespaces
-   make kind        # the same pre-bake Killercoda users get for free (~5–10 min)
-   ```
-5. *(Optional)* Join the scoreboard:
-   `printf 'PLAYER=%s\nFLAGBOARD_URL=%s\n' "team" "https://…" > ~/.flagboard`
-6. Play the steps in order from `workshop/5spot-ctf-capd/step*/text.md`
-   (ignore the `{{exec}}` markers — copy/paste the commands), and capture each
-   flag by running its verifier:
+3. **Play the steps in order.** Open `workshop/5spot-ctf-capd/step1-deploy/text.md`,
+   run the commands, then run that step's `verify.sh`. Repeat for `step2…`, `step3…`.
 
-   ```bash
-   bash workshop/5spot-ctf-capd/step1-deploy/verify.sh
-   ```
+That's it. **Stop the Codespace when you're done** (Code ▸ Codespaces ▸ Stop) so it
+doesn't burn your free hours.
 
-## Tier-specific gotchas
+> Don't have the Codespace yet? On the repo: **Code ▸ Codespaces ▸ Create**, accept
+> the offered machine, wait for the build, then run the steps above in its terminal.
 
-- **Free quota**: personal GitHub accounts get a monthly pool of core-hours
-  (≈30 hrs on a 4-core machine) and the meter runs while the codespace is
-  active — plenty for the workshop; **stop the codespace** afterwards
-  (Code ▸ Codespaces ▸ Stop) so it doesn't idle-burn.
-- Everything runs *inside* the codespace — `kubectl` in the built-in terminal,
-  not your laptop's.
-- Rebuilt or restarted? Tools persist; cluster state does not — rerun `make kind`.
-- Want the **real** k0smotron track here? It works, but needs an SSH target —
-  see [hard-setup.md](hard-setup.md) §RemoteMachine; localhost-as-target inside
-  a codespace is unvalidated territory.
+## Good to know
 
-## Help
+- **kubectl shortcuts** — the pre-bake installs aliases (`k`, `kgp`, `ksm`,
+  `kmgmt`, `kwl`, …). If a terminal you already had open doesn't have them, run
+  `exec bash` (or open a new one). They live in `workshop/shared/kubectl-aliases.sh`.
+- **State doesn't survive a rebuild** — rerun `make kind` if you restart the Codespace.
+- *(Optional)* join the scoreboard so flags post themselves:
+  `printf 'PLAYER=%s\nFLAGBOARD_URL=%s\n' "team" "https://…" > ~/.flagboard`
+- Want the **real** k0smotron track? It needs an SSH target — see [hard-setup.md](hard-setup.md).
 
-[cli-setup.md](cli-setup.md) (tool details) ·
-[Troubleshooting](https://5spot.finos.org/operations/troubleshooting/) ·
-[user-guide.md](user-guide.md) · plain walkthrough: [lab-guide.md](lab-guide.md)
+## More
+
+New to the game → **[user-guide.md](user-guide.md)** · not into CTF →
+**[lab-guide.md](lab-guide.md)** · compare environments →
+**[quickstart-tiers.md](quickstart-tiers.md)** · 5-Spot docs →
+[5spot.finos.org](https://5spot.finos.org/) ·
+**Facilitator** (hosting, prebuilds, cost) →
+[codespaces-setup-facilitator.md](codespaces-setup-facilitator.md)

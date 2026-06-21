@@ -1,0 +1,27 @@
+# kind management cluster for the k0smotron tier.
+#
+# Unlike the CAPD tier, the hosted control plane (K0smotronControlPlane) runs as
+# pods INSIDE this kind cluster and is exposed via a NodePort service. The k0s
+# WORKER, however, runs on a SEPARATE MiniLAN node (node-02) and must reach that
+# control plane over the LAN. kind nodes are docker containers on an internal bridge
+# (172.18.0.0/16) that node-02 cannot route to — and docker's FORWARD isolation
+# blocks routing into it anyway. So we PUBLISH the control-plane NodePorts on node-01's
+# host (0.0.0.0), the one address node-02 can reach (node-01's LAN IP). Paired with
+# the K0smotronControlPlane's `externalAddress: <node-01 LAN IP>`, the worker's join
+# config then points at node-01:30443 → kind node → hosted control plane.
+#
+# Ports must match the K0smotronControlPlane service (apiPort 30443, konnectivityPort
+# 30132) in workload-cluster-k0smotron.yaml.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30443        # hosted control-plane API server (NodePort)
+        hostPort: 30443
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+      - containerPort: 30132        # hosted control-plane konnectivity (NodePort)
+        hostPort: 30132
+        listenAddress: "0.0.0.0"
+        protocol: TCP

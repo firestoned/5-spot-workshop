@@ -5,7 +5,6 @@
 #   ./scripts/5-spot-teardown.sh --env-tier kind          # CAPD: mgmt + workload
 #   ./scripts/5-spot-teardown.sh --env-tier hard          # k0smotron + remote node
 #   ./scripts/5-spot-teardown.sh --env-tier codespaces    # same as kind, in-container
-#   ./scripts/5-spot-teardown.sh --env-tier killercoda    # nothing (browser expires)
 #   ./scripts/5-spot-teardown.sh --env-tier kind --purge  # also delete cloned repos/keys
 #   ./scripts/5-spot-teardown.sh --env-tier hard --stop-colima  # also stop Colima (macOS)
 #
@@ -21,7 +20,7 @@ WORKDIR="$HOME/5spot-workshop"
 REPO_CLONE="$HOME/5-spot"
 KUBECONFIG_FILE="$HOME/dev-cluster.kubeconfig"
 SSH_KEY="$HOME/remote_key"
-REMOTE_NODE_HOST="${REMOTE_NODE_HOST:-node02}"
+REMOTE_NODE_HOST="${REMOTE_NODE_HOST:-node-02}"
 
 TIER=""; PURGE=false; STOP_COLIMA=false
 while [ $# -gt 0 ]; do
@@ -56,12 +55,17 @@ delete_kind_mgmt() {
 # they leak unless we clean them up explicitly.
 delete_capd_workload() {
   have docker || { yell "  ⚠ docker not found — skipping CAPD workload cleanup"; return; }
+  # Match by the kind cluster LABEL alone — it's on every workload container (lb,
+  # control-planes, scheduled workers) regardless of name. (The earlier label+name
+  # AND-filter was fine, but label-only is simpler and equally complete.)
   local ids
-  ids="$(docker ps -aq \
-    --filter "label=io.x-k8s.kind.cluster=${WORKLOAD_CLUSTER}" \
-    --filter "name=${WORKLOAD_CLUSTER}" 2>/dev/null | sort -u)"
+  ids="$(docker ps -aq --filter "label=io.x-k8s.kind.cluster=${WORKLOAD_CLUSTER}" 2>/dev/null | sort -u)"
   if [ -n "$ids" ]; then
     yell "  → removing CAPD workload containers for '$WORKLOAD_CLUSTER'"
+    # kind/CAPD set --restart=always, so a bare `docker rm -f` races the restart
+    # policy and the container respawns. Disable restart + stop first.
+    docker update --restart=no $ids >/dev/null 2>&1 || true
+    docker stop $ids >/dev/null 2>&1 || true
     docker rm -f $ids >/dev/null 2>&1 \
       && green "  ✓ workload containers removed" || red "  ✗ some workload containers survived"
   else
@@ -105,19 +109,17 @@ stop_colima() {
 }
 
 # ---- tiers ------------------------------------------------------------------
-[ -z "$TIER" ] && { red "required: --env-tier {killercoda|codespaces|kind|hard}"; exit 2; }
+[ -z "$TIER" ] && { red "required: --env-tier {codespaces|kind|hard}"; exit 2; }
 echo "5-Spot teardown — tier: $TIER  ($OS)  $($PURGE && echo PURGE)"
 echo
 
 case "$TIER" in
-  killercoda)
-    green "  ✓ Nothing to tear down — the Killercoda VM is discarded when the session ends."
-    ;;
-
   kind|codespaces)
     # CAPD path (make kind / Codespaces pre-bake): mgmt kind cluster + workload containers.
-    delete_capd_workload
+    # Delete the mgmt cluster FIRST — while CAPD is still running it would just
+    # recreate any workload containers we remove.
     delete_kind_mgmt
+    delete_capd_workload
     clean_files
     stop_colima
     ;;
@@ -125,13 +127,13 @@ case "$TIER" in
   hard)
     # k0smotron path: mgmt kind cluster + hosted control plane (pods) + remote worker.
     reset_remote_node
-    delete_capd_workload   # harmless if absent; covers mixed local rehearsals
-    delete_kind_mgmt
+    delete_kind_mgmt        # stop CAPD/CAPI before clearing any workload containers
+    delete_capd_workload    # harmless if absent; covers mixed local rehearsals
     clean_files
     stop_colima
     ;;
 
-  *) red "unknown tier '$TIER' — use killercoda|codespaces|kind|hard"; exit 2;;
+  *) red "unknown tier '$TIER' — use codespaces|kind|hard"; exit 2;;
 esac
 
 echo

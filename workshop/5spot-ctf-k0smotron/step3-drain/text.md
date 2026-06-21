@@ -3,9 +3,12 @@
 Close the window. 5-Spot cordons → drains the node, then deletes the `Machine`,
 `RemoteMachine`, and `K0sWorkerConfig` — and k0smotron resets the remote host.
 
+The schedule window stays "always-on", so flip the ScheduledMachine's master switch
+(`spec.enabled`, ADR 0009) to make it inactive:
+
 ```bash
 kubectl --context kind-5spot-mgmt patch sm business-hours-worker \
-  --type merge -p '{"spec":{"schedule":{"enabled":false}}}'
+  --type merge -p '{"spec":{"enabled":false}}'
 ```{{exec}}
 
 Watch the phase walk `Active → ShuttingDown → Inactive` and the node leave:

@@ -11,7 +11,7 @@ description: |
 
 categories:
   - kubernetes
-  - cluster-api
+  - containers
 
 tagz:
   - 5-spot
@@ -19,7 +19,6 @@ tagz:
   - k0smotron
   - k0s
   - remotemachine
-  - finos
 
 difficulty: hard
 
@@ -31,24 +30,21 @@ cover: __static__/cover.png
 # PLAYGROUND
 # k0smotron needs a management host (kind mgmt cluster + k0smotron providers) AND a
 # separate remote host to provision a k0s worker onto over SSH — so a multi-node
-# base playground is required. MiniLAN (Ubuntu, Docker) gives four mutually
-# reachable Ubuntu VMs with Docker (~2 CPU / 4 GiB each).
+# base playground is required. The `mini-lan-ubuntu-docker` base playground gives
+# four mutually reachable Ubuntu VMs with Docker (node-01..node-04, ~2 CPU/4 GiB
+# each) — confirmed via the iximiuz playgrounds API. node-01 is the management
+# host; node-02 is the RemoteMachine SSH target the k0s worker is provisioned onto.
 #
-# <!-- TODO(verify at publish): confirm the MiniLAN-with-Docker base playground
-#      name and its machine hostnames via `labctl playground list`. The `name:`
-#      below and the `machine:` values on every task are best guesses. The mgmt
-#      cluster runs on the first node; the remote SSH target is a second node. -->
-# <!-- TODO(verify at publish): the k0smotron pre-bake (setup-background.sh) was
-#      written for Killercoda's node01/node02 hostnames + REMOTE_NODE_HOST. It must
-#      be adapted to MiniLAN's hostnames/IPs so the RemoteMachine SSH target is
-#      wired correctly. This scenario is a DRAFT and not yet validated end-to-end. -->
+# ⚠️ This scenario is heavier than the CAPD track and the per-node RAM (~4 GiB) is
+#    tight for k0smotron. Treat the browser run as best-effort and SMOKE-TEST it on
+#    a real 2-node env before the workshop (see docs/iximiuz-setup.md §4).
 playground:
-  name: minilan-ubuntu-docker
+  name: mini-lan-ubuntu-docker
 
-# All tasks pin to the management machine and run as the default root user
-# (HOME=/root) — matching how the pre-bake/verifiers were written for Killercoda.
-# (When `machine` is set, it must be set on ALL tasks.) Run your own shell
-# commands as root (`sudo -i`) on the management node.
+# All tasks pin to the management node (node-01) and run as the default root user
+# (HOME=/root) — matching how the pre-bake/verifiers were written. (When `machine`
+# is set, it must be set on ALL tasks.) Run your own shell commands as root
+# (`sudo -i`) on node-01.
 tasks:
   init_prebake:
     init: true
@@ -59,7 +55,11 @@ tasks:
       if [ ! -d /opt/wk/.git ]; then
         git clone --depth 1 https://github.com/firestoned/5-spot-workshop /opt/wk
       fi
-      bash /opt/wk/workshop/5spot-ctf-k0smotron/setup-background.sh
+      # The pre-bake provisions a k0s worker onto a remote SSH target. On this
+      # playground that's node-02 (the pre-bake resolves the hostname → IP and
+      # authorizes a generated key). node-01↔node-02 root SSH reachability is a
+      # MiniLAN property; if the key push fails, see docs/iximiuz-setup.md §4.
+      REMOTE_NODE_HOST=node-02 bash /opt/wk/workshop/5spot-ctf-k0smotron/setup-background.sh
 
   verify_window:
     machine: node-01
@@ -105,7 +105,7 @@ remote host** to provision them.
 
 > ⚠️ **DRAFT — not yet validated end-to-end on iximiuz.** k0smotron API fields and
 > version compatibility move, and the pre-bake's remote-host wiring must be adapted
-> from Killercoda's two-node layout to this playground (see the source TODOs). If a
+> from a generic two-node layout to this playground (see the source TODOs). If a
 > step misbehaves, check [docs.k0smotron.io](https://docs.k0smotron.io),
 > [5-Spot CAPI Integration](https://5spot.finos.org/advanced/capi-integration/), and
 > [Troubleshooting](https://5spot.finos.org/operations/troubleshooting/). Learn the

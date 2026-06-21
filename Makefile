@@ -8,7 +8,7 @@ REPO_URL ?= https://github.com/firestoned/5-spot-workshop
 # this in sync with the fork attendees launch from.
 CODESPACES_REPO ?= https://github.com/ebourgeois/5-spot-workshop
 
-.PHONY: help validate codespaces codespaces-url killercoda iximiuz kind hard kind-down hard-down codespaces-down killercoda-down teardown flagboard flagboard-replay test test-live-kind test-live-k0smotron slides clean
+.PHONY: help validate codespaces codespaces-url iximiuz iximiuz-install iximiuz-publish iximiuz-live kind hard kind-down hard-down codespaces-down teardown flagboard flagboard-replay test test-live-kind test-live-k0smotron slides clean
 
 help: ## Show this menu
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "};{printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
@@ -32,24 +32,21 @@ codespaces-url: ## Print the one-click Codespaces launch link to share with atte
 	fi; \
 	echo "Share with attendees → https://codespaces.new/$$slug"
 
-killercoda: ## Validate both Killercoda scenarios and print wiring steps
-	./scripts/test-tiers.sh --tier killercoda
-	@echo ""
-	@echo "Go live:  1) push this repo (public)   2) killercoda.com → sign in with GitHub"
-	@echo "          3) Creators → connect repo → add scenarios at:"
-	@echo "             workshop/5spot-ctf-capd    and    workshop/5spot-ctf-k0smotron"
-	@echo "          4) every git push auto-updates. Full guide: docs/killercoda-setup.md"
-
 iximiuz: ## Validate the iximiuz Labs content (skill path + 2 challenges) and print publish steps
 	./scripts/test-iximiuz.sh
 	@echo ""
-	@echo "Go live:  1) push this repo (public)   2) labctl auth login"
-	@echo "          3) from iximiuz/ , create once then push:"
-	@echo "             labctl content create skill-path 5-spot-ctf --dir skill-paths/5-spot-ctf"
-	@echo "             labctl content create challenge 5spot-ctf-capd --dir challenges/5spot-ctf-capd"
-	@echo "             labctl content create challenge 5spot-ctf-k0smotron --dir challenges/5spot-ctf-k0smotron"
-	@echo "             labctl content push <kind> <name> --dir <dir> --force   # on every update"
-	@echo "          4) resolve TODO(verify at publish) markers. Full guide: docs/iximiuz-setup.md"
+	@echo "Go live:  1) push this repo (public)   2) make iximiuz-publish"
+	@echo "             (installs labctl if missing, prompts for 'labctl auth login', then creates+pushes all 3)"
+	@echo "          3) smoke-test the k0smotron MiniLAN SSH path. Full guide: docs/iximiuz-setup.md"
+
+iximiuz-install: ## Install the iximiuz labctl CLI if it's not already present
+	./scripts/iximiuz-publish.sh --install
+
+iximiuz-publish: iximiuz ## Ensure labctl, then create + push the skill path and both challenges to iximiuz Labs
+	./scripts/iximiuz-publish.sh
+
+iximiuz-live: ## REAL smoke test on a live iximiuz playground: pre-bake + flag verifiers, tear down (ARGS="capd|k0smotron [--free-tier] [--keep]")
+	./scripts/test-iximiuz-live.sh $(ARGS)
 
 kind: ## Bring up the CAPD environment locally (facilitator rehearsal)
 	./scripts/5-spot-bootstrap.sh --env-tier kind
@@ -64,11 +61,8 @@ hard-down: ## FULL teardown of the hard/k0smotron tier (mgmt + hosted CP + remot
 codespaces-down: ## FULL teardown inside a Codespace (same as kind/CAPD)
 	./scripts/5-spot-teardown.sh --env-tier codespaces $(TEARDOWN_ARGS)
 
-killercoda-down: ## Teardown note for Killercoda (the browser VM is discarded automatically)
-	./scripts/5-spot-teardown.sh --env-tier killercoda
-
-teardown: ## Tear down a tier: make teardown TIER=kind|hard|codespaces|killercoda [TEARDOWN_ARGS=--purge]
-	@test -n "$(TIER)" || (echo "pass TIER=kind|hard|codespaces|killercoda"; exit 1)
+teardown: ## Tear down a tier: make teardown TIER=kind|hard|codespaces [TEARDOWN_ARGS=--purge]
+	@test -n "$(TIER)" || (echo "pass TIER=kind|hard|codespaces"; exit 1)
 	./scripts/5-spot-teardown.sh --env-tier $(TIER) $(TEARDOWN_ARGS)
 
 test: ## Static test of every tier (safe anywhere)

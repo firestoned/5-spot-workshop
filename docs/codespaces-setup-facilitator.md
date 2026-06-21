@@ -3,8 +3,8 @@
 How to host the **Medium tier** on GitHub Codespaces: every attendee gets a cloud
 devbox with the pinned toolchain pre-installed, then runs the cluster bring-up
 themselves. This is the best tier for **Windows users** and anyone who can't (or
-won't) install Docker locally, and it has **no session timer** like Killercoda —
-a codespace runs until it idles out or you stop it.
+won't) install Docker locally, and a codespace runs until it idles out or you stop
+it (no short session timer).
 
 > Attendee-facing instructions live in [codespaces-setup.md](codespaces-setup.md).
 > This doc is for **you, the facilitator**: accounts, prebuilds, machine-type and
@@ -221,6 +221,6 @@ k0smotron-on-Codespaces as best-effort.
 ## Help
 
 [cli-setup.md](cli-setup.md) (tool details) ·
-[killercoda-setup.md](killercoda-setup.md) (the other hosted tier) ·
+[iximiuz-setup.md](iximiuz-setup.md) (the browser-lab tier) ·
 [Troubleshooting](https://5spot.finos.org/operations/troubleshooting/) ·
 GitHub Codespaces docs: <https://docs.github.com/codespaces>

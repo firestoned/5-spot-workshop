@@ -17,8 +17,8 @@ is built around — no Docker-provider shortcuts. Here:
 On **node01**: a kind management cluster with CAPI core, the **k0smotron** providers
 (`clusterctl init --bootstrap/--control-plane/--infrastructure k0sproject-k0smotron`),
 cert-manager, the 5-Spot controller (`ghcr.io/finos/5-spot:v0.2.2`), and a hosted
-`K0smotronControlPlane` for `dev-cluster`. An SSH key is authorized on **node02** —
-that's the remote host a worker will be provisioned onto.
+`K0smotronControlPlane` for `dev-cluster`. An SSH key is authorized on the **remote
+node** (`node-02` on a multi-node lab) — that's the host a worker will be provisioned onto.
 
 Ready when this responds:
 

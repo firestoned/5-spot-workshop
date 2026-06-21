@@ -5,26 +5,27 @@ your skill level.
 
 | Your situation | Use |
 |---|---|
-| Locked-down laptop, no Docker, or just want zero setup | 🟢 **Killercoda** |
-| Windows | 🟡 **Codespaces** (or Killercoda) |
+| Locked-down laptop, no Docker, or just want zero setup | 🟢 **iximiuz browser lab** |
+| Windows | 🟡 **Codespaces** (or the iximiuz browser lab) |
 | macOS | 🟡 kind via **Colima**, or 🔴 Hard via `scripts/setup-mac.sh` |
 | Linux | any tier — and the best host for the ⭐⭐ CoCo bonus |
 
 ---
 
-## 🟢 Killercoda (browser — zero install)
+## 🟢 iximiuz browser lab (zero install)
 
-*Full guide: [killercoda-user.md](killercoda-user.md)*
+*Full guide: [iximiuz-setup.md](iximiuz-setup.md) (facilitator/publishing)*
 
-1. Open the course — **https://killercoda.com/5-spot/course/workshop** — and pick:
+1. Open the skill path — **https://labs.iximiuz.com/skill-paths/5-spot-ctf-dc5a4cf4** — and
+   pick a challenge:
    - *Simplified (CAPD)* — learning shortcut, **not** real-world
    - *Real (k0s + k0smotron)* — production-representative track
-2. Press **START**. The environment pre-bakes itself (~2–5 min). Read the intro
-   while you wait; `tail -f /opt/5spot-setup.log` shows progress.
-3. Each step ends with a **CHECK** button — that's the flag verifier. Green = flag
-   captured, move on.
+2. Press **Start**. The playground pre-bakes itself (a few minutes); the screen shows
+   a loading state until it's ready. `tail -f /tmp/5spot-setup.log` shows progress.
+3. Each flag is a task that auto-checks in the background — it flips to complete when
+   your cluster reaches the right state.
 
-Nothing to install. If the session dies (free-tier time limits), just relaunch.
+Nothing to install.
 
 ## 🟡 Codespaces (browser — full bootstrap experience)
 
@@ -38,7 +39,7 @@ Nothing to install. If the session dies (free-tier time limits), just relaunch.
 
    ```bash
    ./scripts/5-spot-bootstrap.sh --env-tier codespaces
-   make kind        # runs the same pre-bake Killercoda users get for free
+   make kind        # runs the same pre-bake the browser lab does for you
    ```
 4. Play the steps from `workshop/5spot-ctf-capd/step*/text.md` in order, running
    each `verify.sh` yourself to capture flags:
@@ -65,7 +66,7 @@ kubectl, kind, clusterctl, helm, k0sctl, flux) and starts Colima sized right:
 ./scripts/5-spot-bootstrap.sh --env-tier hard    # Hard (adds k0sctl, flux, CoCo probe)
 ```
 
-**Windows** — don't fight WSL/nested virt: use **Codespaces** or **Killercoda**.
+**Windows** — don't fight WSL/nested virt: use **Codespaces** or the **iximiuz browser lab**.
 
 Then bring it up and play:
 

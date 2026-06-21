@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 5-Spot CTF — Easy tier pre-bake (Killercoda background script)
+# 5-Spot CTF — CAPD pre-bake (shared: iximiuz init task, local kind, Codespaces)
 #
 # Brings the environment up to "workload control-plane Ready + CNI installed"
 # so the attendee starts at the fun part (apply a ScheduledMachine).
 #
 # ⚠️  RESOURCE SMOKE-TEST REQUIRED. kind + CAPD spins ~4 Docker containers. Run
-#     this on a free Killercoda env once and confirm it finishes inside the
+#     this on the target playground/host once and confirm it finishes inside the
 #     session/RAM budget. If not, move Easy to a pre-baked VM image or Codespaces.
 #
 # Mirrors finos/5-spot examples/workshop Parts 1–2. All version pins live here.
@@ -25,83 +25,43 @@ CALICO_VERSION="v3.28.0"
 MGMT="kind-5spot-mgmt"
 
 # ---- Attendee quality-of-life: kubectl aliases + completion ----------------
-# Appended to ~/.bashrc so they're live in every terminal the attendee opens.
-# Idempotent (marker-guarded). Keep this in sync with the k0smotron scenario.
+# Single source of truth: workshop/shared/kubectl-aliases.sh, wired into the
+# shell startup files by workshop/shared/install-aliases.sh. Locate the installer
+# relative to this script, with fallbacks for the cloned-repo layouts.
 install_shell_aliases() {
-  # Capture the block once, then install it to a SYSTEM-WIDE rc so every
-  # interactive shell sees it regardless of $HOME. Killercoda may run this
-  # background script with HOME unset (so "${HOME}/.bashrc" would land in the
-  # wrong place), and Ubuntu's /etc/profile also sources /etc/bash.bashrc for
-  # login shells — so /etc/bash.bashrc covers both shell types.
-  local block; block="$(cat <<'ALIASES'
-
-# >>> 5-spot kubectl aliases >>>
-# kubectl bash-completion, and make `k` complete just like kubectl.
-command -v kubectl >/dev/null && { source <(kubectl completion bash); complete -o default -F __start_kubectl k; }
-
-alias k='kubectl'
-alias kg='kubectl get'
-alias kp='kubectl get pods'
-alias kgp='kubectl get pods'
-alias kgpa='kubectl get pods -A'
-alias kgpo='kubectl get pods -o wide'
-alias kgpw='kubectl get pods -w'
-alias kgs='kubectl get svc'
-alias kgn='kubectl get nodes'
-alias kgno='kubectl get nodes -o wide'
-alias kgd='kubectl get deploy'
-alias kga='kubectl get all'
-alias kgaa='kubectl get all -A'
-alias kge='kubectl get events --sort-by=.lastTimestamp'
-alias kd='kubectl describe'
-alias kdp='kubectl describe pod'
-alias kdn='kubectl describe node'
-alias kl='kubectl logs'
-alias klf='kubectl logs -f'
-alias ke='kubectl exec -it'
-alias kaf='kubectl apply -f'
-alias kdel='kubectl delete'
-alias kdelf='kubectl delete -f'
-alias kx='kubectl config use-context'
-alias kctx='kubectl config get-contexts'
-alias kns='kubectl config set-context --current --namespace'
-
-# 5-Spot specifics: the ScheduledMachine CRD, the mgmt context, the workload cluster.
-alias ksm='kubectl get sm -A'
-alias kdsm='kubectl describe sm'
-alias kmgmt='kubectl --context kind-5spot-mgmt'
-alias kwl='kubectl --kubeconfig $HOME/dev-cluster.kubeconfig'
-# <<< 5-spot kubectl aliases <<<
-ALIASES
-)"
-  local t
-  for t in /etc/bash.bashrc "${HOME:-/root}/.bashrc"; do
-    grep -q '5-spot kubectl aliases' "$t" 2>/dev/null && continue
-    if { [ -e "$t" ] && [ -w "$t" ]; } || { [ ! -e "$t" ] && [ -w "$(dirname "$t")" ]; }; then
-      printf '\n%s\n' "$block" >> "$t"
-    else
-      printf '\n%s\n' "$block" | sudo tee -a "$t" >/dev/null 2>&1 || continue
-    fi
-    echo "==> Installed kubectl aliases (k, kgp, ksm, kwl, …) into $t"
+  local inst
+  for inst in "$(dirname "$0")/../shared/install-aliases.sh" \
+              "/opt/wk/workshop/shared/install-aliases.sh" \
+              "$HOME/5-spot-workshop/workshop/shared/install-aliases.sh"; do
+    [ -f "$inst" ] && { bash "$inst"; return 0; }
   done
+  echo "  (workshop/shared/install-aliases.sh not found — skipping kubectl aliases)"
 }
 
 # ---- Tooling ---------------------------------------------------------------
-# On Killercoda (Linux) we install the pinned CLIs into /usr/local/bin. On a
+# On a Linux lab host we install the pinned CLIs into /usr/local/bin. On a
 # facilitator's Mac the bootstrap (scripts/5-spot-bootstrap.sh) has already
 # installed darwin/arm64 builds — skip the Linux downloads, which can't write
 # the root-owned /usr/local/bin (curl error 23) and would clobber working tools.
 if [ "$(uname -s)" = "Linux" ]; then
-  echo "==> Installing kind, kubectl, clusterctl"
-  curl -sSLo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
-  chmod +x /usr/local/bin/kind
-  curl -sSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl"
-  chmod +x /usr/local/bin/kubectl
-  curl -sSLo /usr/local/bin/clusterctl "https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL_VERSION}/clusterctl-linux-amd64"
-  chmod +x /usr/local/bin/clusterctl
-
-  echo "==> Installing helm (Flux bonus + CoCo bonus)"
-  curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash || echo "helm install failed (bonus steps will need it)"
+  # Install the pinned CLIs only if MISSING. A browser-lab host runs this script
+  # standalone as root with nothing pre-installed; Codespaces/local already have them via the
+  # devcontainer/bootstrap AND run as a non-root user who can't write the root-owned
+  # /usr/local/bin (curl error 23). So: skip what's present, and sudo when needed.
+  ARCH="$(uname -m)"; case "$ARCH" in x86_64) ARCH=amd64;; aarch64|arm64) ARCH=arm64;; esac
+  SUDO=""; [ -w /usr/local/bin ] || SUDO="sudo"
+  install_bin() { # name url
+    local tmp; tmp="$(mktemp)"
+    echo "==> Installing $1"
+    curl -fsSL "$2" -o "$tmp" && $SUDO install -m0755 "$tmp" "/usr/local/bin/$1"; rm -f "$tmp"
+  }
+  command -v kind      >/dev/null 2>&1 || install_bin kind      "https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-${ARCH}"
+  command -v kubectl   >/dev/null 2>&1 || install_bin kubectl   "https://dl.k8s.io/release/v1.31.0/bin/linux/${ARCH}/kubectl"
+  command -v clusterctl>/dev/null 2>&1 || install_bin clusterctl "https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL_VERSION}/clusterctl-linux-${ARCH}"
+  if ! command -v helm >/dev/null 2>&1; then
+    echo "==> Installing helm (Flux bonus + CoCo bonus)"
+    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash || echo "helm install failed (bonus steps will need it)"
+  fi
 
   install_shell_aliases   # kubectl aliases + completion for the attendee's terminal
 else
@@ -115,9 +75,9 @@ fi
 # The scenario's manifests live in assets/. Resolve them robustly, because where
 # they are depends on how this script was launched:
 #   1) next to this script        — local `make kind` ($0 is in the scenario dir)
-#   2) staged into $WORKDIR        — Killercoda's index.json "assets" block
-#   3) fetched from the workshop repo — fallback (on Killercoda the background
-#      script runs from /var/run/kc-internal, so $0 is NOT next to assets/)
+#   2) staged into $WORKDIR        — a lab host that pre-stages assets there
+#   3) fetched from the workshop repo — fallback (when $0 is NOT next to assets/,
+#      e.g. a lab that runs this script from a different working directory)
 SCENARIO="5spot-ctf-capd"
 WORKSHOP_REPO_URL="${WORKSHOP_REPO_URL:-https://github.com/firestoned/5-spot-workshop.git}"
 WORKDIR="$HOME/5spot-workshop"; mkdir -p "$WORKDIR"
@@ -144,6 +104,17 @@ else
   rm -rf "$HOME/5-spot"
   git clone --depth 1 --branch "$FIVESPOT_REF" https://github.com/finos/5-spot.git $HOME/5-spot
 fi
+
+# ---- Raise inotify limits (kind multi-node footgun) ------------------------
+# kind + CAPD run several node containers (mgmt control-plane + workload
+# control-plane + the scheduled worker); each node's kubelet/cAdvisor needs
+# inotify instances + watches. On hosts with low defaults — nested playgrounds
+# like iximiuz, some CI — the worker kubelet crash-loops with
+# "inotify_init: too many open files" and the node never joins. Raise them
+# (best-effort; needs privileges, which Killercoda/iximiuz/Codespaces have).
+echo "==> Raising inotify limits for kind (fs.inotify.max_user_{instances,watches})"
+sysctl -w fs.inotify.max_user_instances=8192  >/dev/null 2>&1 || true
+sysctl -w fs.inotify.max_user_watches=1048576 >/dev/null 2>&1 || true
 
 # ---- Part 1: management cluster + CAPI + CAPD ------------------------------
 echo "==> Creating kind management cluster"
@@ -199,7 +170,7 @@ kubectl --context "$MGMT" apply -R -f $HOME/5-spot/deploy/deployment/
 kubectl --context "$MGMT" apply -f $HOME/5-spot/deploy/admission/validatingadmissionpolicy.yaml
 kubectl --context "$MGMT" apply -f $HOME/5-spot/deploy/admission/validatingadmissionpolicybinding.yaml
 kubectl --context "$MGMT" -n 5spot-system set image deployment/5spot-controller "controller=${FIVESPOT_IMAGE}"
-# Killercoda's single kind node is CPU-tight; the upstream manifest's CPU *request*
+# A single kind node is CPU-tight; the upstream manifest's CPU *request*
 # is sized for a roomier cluster, so the pod fails to schedule ("Insufficient cpu").
 # Requests (not limits) drive scheduling — shrink the request so it fits anywhere.
 kubectl --context "$MGMT" -n 5spot-system patch deployment/5spot-controller --type=strategic \
@@ -223,7 +194,7 @@ kubectl --context "$MGMT" wait --for=condition=ControlPlaneInitialized cluster/d
 echo "==> Fetching workload kubeconfig + installing Calico CNI"
 clusterctl get kubeconfig dev-cluster > "$WORKDIR/dev-cluster.kubeconfig"
 # CAPD writes the workload API server's Docker-internal IP (172.18.x) into the
-# kubeconfig. That's reachable from a Linux host (Killercoda) but NOT from macOS,
+# kubeconfig. That's reachable from a Linux lab host but NOT from macOS,
 # where colima/Docker only forwards the load-balancer's *published* port to
 # localhost. Rewrite the endpoint to that port on non-Linux hosts.
 if [ "$(uname -s)" != "Linux" ]; then
@@ -257,3 +228,7 @@ if kubectl --context "$MGMT" get sm -A 2>/dev/null | grep -q .; then
 else
   echo "    No ScheduledMachines yet — apply one to capture Flag 1."
 fi
+
+echo
+echo "👉 Load the kubectl shortcuts in THIS shell now:  exec bash"
+echo "   (then: k get nodes · ksm · kmgmt get pods -A · kwl get nodes)"

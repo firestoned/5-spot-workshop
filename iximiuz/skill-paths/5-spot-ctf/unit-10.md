@@ -8,16 +8,13 @@ name: capd
 createdAt: 2026-06-19
 updatedAt: 2026-06-19
 
-# <!-- TODO(verify at publish): confirm units reference challenges via a
-#      `challenges:` map (mirrors the sample's `tutorials:` map) and that the
-#      `::card` `:content:` path is `challenges.<name>`. -->
 challenges:
   5spot-ctf-capd: {}
 ---
 
 ::card
 ---
-:content: challenges.5spot-ctf-capd
+:challenge: challenges.5spot-ctf-capd
 ---
 ::
 
