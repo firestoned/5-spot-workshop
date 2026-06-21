@@ -1,7 +1,7 @@
 # GitOps copy — EDIT address: REMOTE_NODE_IP to your real host IP in YOUR FORK
 # before pointing Flux here (Flux cannot template it at apply time).
 # REAL scenario — a time-scheduled k0s WORKER provisioned over SSH onto a remote
-# machine (here: the second Killercoda node / a Colima VM / bare metal).
+# machine (here: a second lab node / a Colima VM / bare metal).
 #
 # When the window is OPEN, 5-Spot creates on the management cluster:
 #   1. K0sWorkerConfig (bootstrap.cluster.x-k8s.io) — generates the k0s join
@@ -38,7 +38,7 @@ spec:
       version: v1.30.0+k0s.0
 
   # Infrastructure: an SSH-reachable host. ADDRESS is templated by the setup script
-  # to the remote node's IP (e.g. Killercoda node02). The private key lives in the
+  # to the remote node's IP (e.g. node-02 on a multi-node lab). The private key lives in the
   # Secret 'remote-ssh-key' (see remote-ssh-secret.example.yaml).
   infrastructureSpec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

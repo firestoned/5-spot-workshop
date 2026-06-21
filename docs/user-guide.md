@@ -11,10 +11,10 @@ audit trail. Today you deploy it, prove it, and try to break it.
 ## How the game works
 
 - **Choose your adventure twice.** First a *scenario flavour* (🟢 simplified CAPD
-  vs 🔵 real k0s + k0smotron), then an *environment tier* (Killercoda / Codespaces
-  / local). See [quickstart-tiers.md](quickstart-tiers.md).
+  vs 🔵 real k0s + k0smotron), then an *environment tier* (iximiuz browser lab /
+  Codespaces / local). See [quickstart-tiers.md](quickstart-tiers.md).
 - **Capture flags.** Each challenge emits `FLAG{…}` when your cluster reaches the
-  right state. On Killercoda press **CHECK**; elsewhere run the step's `verify.sh`.
+  right state. In a browser lab press **Check**; elsewhere run the step's `verify.sh`.
 - **Teams or solo** — both fine. Every player/team has their own sandbox.
 - **Flags post themselves.** Run the join one-liner from the scenario intro once
   (team name + the scoreboard URL from the QR on screen); after that, every flag

@@ -2,10 +2,10 @@
 # =============================================================================
 # 5-Spot CTF — REAL tier pre-bake (k0s + k0smotron, RemoteMachine over SSH)
 #
-# Topology:
-#   node01: kind management cluster (CAPI core + k0smotron providers + 5-Spot)
-#           + a HOSTED workload control plane (K0smotronControlPlane).
-#   node02: the SSH target a scheduled k0s worker (RemoteMachine) is provisioned onto.
+# Topology (multi-node lab, e.g. mini-lan node-01..node-04):
+#   node-01: kind management cluster (CAPI core + k0smotron providers + 5-Spot)
+#            + a HOSTED workload control plane (K0smotronControlPlane).
+#   node-02: the SSH target a scheduled k0s worker (RemoteMachine) is provisioned onto.
 #
 # 📚 k0smotron install: https://docs.k0smotron.io   |  5-Spot: https://5spot.finos.org/
 #
@@ -23,84 +23,47 @@ CLUSTERCTL_VERSION="v1.9.5"                   # must serve cluster.x-k8s.io/v1be
 FIVESPOT_IMAGE="ghcr.io/finos/5-spot:v0.2.2"  # CONFIRM exact published tag
 CERT_MANAGER_VERSION="v1.15.3"
 MGMT="kind-5spot-mgmt"
-REMOTE_NODE_HOST="${REMOTE_NODE_HOST:-node02}"  # Killercoda 2nd node; override locally
+REMOTE_NODE_HOST="${REMOTE_NODE_HOST:-node-02}"  # remote SSH target host; override for your environment
 
 # ---- Attendee quality-of-life: kubectl aliases + completion ----------------
-# Appended to ~/.bashrc so they're live in every terminal the attendee opens.
-# Idempotent (marker-guarded). Keep this in sync with the CAPD scenario.
+# Single source of truth: workshop/shared/kubectl-aliases.sh, wired into the
+# shell startup files by workshop/shared/install-aliases.sh. Locate the installer
+# relative to this script, with fallbacks for the cloned-repo layouts.
 install_shell_aliases() {
-  # Capture the block once, then install it to a SYSTEM-WIDE rc so every
-  # interactive shell sees it regardless of $HOME. Killercoda may run this
-  # background script with HOME unset (so "${HOME}/.bashrc" would land in the
-  # wrong place), and Ubuntu's /etc/profile also sources /etc/bash.bashrc for
-  # login shells — so /etc/bash.bashrc covers both shell types.
-  local block; block="$(cat <<'ALIASES'
-
-# >>> 5-spot kubectl aliases >>>
-# kubectl bash-completion, and make `k` complete just like kubectl.
-command -v kubectl >/dev/null && { source <(kubectl completion bash); complete -o default -F __start_kubectl k; }
-
-alias k='kubectl'
-alias kg='kubectl get'
-alias kp='kubectl get pods'
-alias kgp='kubectl get pods'
-alias kgpa='kubectl get pods -A'
-alias kgpo='kubectl get pods -o wide'
-alias kgpw='kubectl get pods -w'
-alias kgs='kubectl get svc'
-alias kgn='kubectl get nodes'
-alias kgno='kubectl get nodes -o wide'
-alias kgd='kubectl get deploy'
-alias kga='kubectl get all'
-alias kgaa='kubectl get all -A'
-alias kge='kubectl get events --sort-by=.lastTimestamp'
-alias kd='kubectl describe'
-alias kdp='kubectl describe pod'
-alias kdn='kubectl describe node'
-alias kl='kubectl logs'
-alias klf='kubectl logs -f'
-alias ke='kubectl exec -it'
-alias kaf='kubectl apply -f'
-alias kdel='kubectl delete'
-alias kdelf='kubectl delete -f'
-alias kx='kubectl config use-context'
-alias kctx='kubectl config get-contexts'
-alias kns='kubectl config set-context --current --namespace'
-
-# 5-Spot specifics: the ScheduledMachine CRD, the mgmt context, the workload cluster.
-alias ksm='kubectl get sm -A'
-alias kdsm='kubectl describe sm'
-alias kmgmt='kubectl --context kind-5spot-mgmt'
-alias kwl='kubectl --kubeconfig $HOME/dev-cluster.kubeconfig'
-# <<< 5-spot kubectl aliases <<<
-ALIASES
-)"
-  local t
-  for t in /etc/bash.bashrc "${HOME:-/root}/.bashrc"; do
-    grep -q '5-spot kubectl aliases' "$t" 2>/dev/null && continue
-    if { [ -e "$t" ] && [ -w "$t" ]; } || { [ ! -e "$t" ] && [ -w "$(dirname "$t")" ]; }; then
-      printf '\n%s\n' "$block" >> "$t"
-    else
-      printf '\n%s\n' "$block" | sudo tee -a "$t" >/dev/null 2>&1 || continue
-    fi
-    echo "==> Installed kubectl aliases (k, kgp, ksm, kwl, …) into $t"
+  local inst
+  for inst in "$(dirname "$0")/../shared/install-aliases.sh" \
+              "/opt/wk/workshop/shared/install-aliases.sh" \
+              "$HOME/5-spot-workshop/workshop/shared/install-aliases.sh"; do
+    [ -f "$inst" ] && { bash "$inst"; return 0; }
   done
+  echo "  (workshop/shared/install-aliases.sh not found — skipping kubectl aliases)"
 }
 
 # ---- Tooling ---------------------------------------------------------------
-echo "==> Installing kind, kubectl, clusterctl"
-curl -sSLo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64; chmod +x /usr/local/bin/kind
-curl -sSLo /usr/local/bin/kubectl https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl; chmod +x /usr/local/bin/kubectl
-curl -sSLo /usr/local/bin/clusterctl "https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL_VERSION}/clusterctl-linux-amd64"; chmod +x /usr/local/bin/clusterctl
-
-echo "==> Installing helm (Flux bonus + CoCo bonus)"
-curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash || echo "helm install failed (bonus steps will need it)"
+# Install the pinned CLIs only if MISSING. A browser-lab host runs standalone as root with
+# nothing pre-installed; Codespaces/local already have them and run as a non-root
+# user who can't write the root-owned /usr/local/bin (curl error 23). Skip what's
+# present, sudo when needed.
+ARCH="$(uname -m)"; case "$ARCH" in x86_64) ARCH=amd64;; aarch64|arm64) ARCH=arm64;; esac
+SUDO=""; [ -w /usr/local/bin ] || SUDO="sudo"
+install_bin() { # name url
+  local tmp; tmp="$(mktemp)"
+  echo "==> Installing $1"
+  curl -fsSL "$2" -o "$tmp" && $SUDO install -m0755 "$tmp" "/usr/local/bin/$1"; rm -f "$tmp"
+}
+command -v kind      >/dev/null 2>&1 || install_bin kind      "https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-${ARCH}"
+command -v kubectl   >/dev/null 2>&1 || install_bin kubectl   "https://dl.k8s.io/release/v1.31.0/bin/linux/${ARCH}/kubectl"
+command -v clusterctl>/dev/null 2>&1 || install_bin clusterctl "https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL_VERSION}/clusterctl-linux-${ARCH}"
+if ! command -v helm >/dev/null 2>&1; then
+  echo "==> Installing helm (Flux bonus + CoCo bonus)"
+  curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash || echo "helm install failed (bonus steps will need it)"
+fi
 
 install_shell_aliases   # kubectl aliases + completion for the attendee's terminal
 
 # Resolve the scenario's assets/ robustly — see the CAPD setup script for the
-# full rationale. On Killercoda the background script runs from
-# /var/run/kc-internal, so $0 is NOT next to assets/; fall back accordingly.
+# full rationale. Some labs run this script from a different working directory,
+# so $0 is NOT next to assets/; fall back accordingly.
 SCENARIO="5spot-ctf-k0smotron"
 WORKSHOP_REPO_URL="${WORKSHOP_REPO_URL:-https://github.com/firestoned/5-spot-workshop.git}"
 WORKDIR="$HOME/5spot-workshop"; mkdir -p "$WORKDIR"
@@ -157,7 +120,7 @@ kubectl --context "$MGMT" apply -R -f $HOME/5-spot/deploy/deployment/
 kubectl --context "$MGMT" apply -f $HOME/5-spot/deploy/admission/validatingadmissionpolicy.yaml || true
 kubectl --context "$MGMT" apply -f $HOME/5-spot/deploy/admission/validatingadmissionpolicybinding.yaml || true
 kubectl --context "$MGMT" -n 5spot-system set image deployment/5spot-controller "controller=${FIVESPOT_IMAGE}"
-# Killercoda's single kind node is CPU-tight; the upstream manifest's CPU *request*
+# A single kind node is CPU-tight; the upstream manifest's CPU *request*
 # is sized for a roomier cluster, so the pod fails to schedule ("Insufficient cpu").
 # Requests (not limits) drive scheduling — shrink the request so it fits anywhere.
 kubectl --context "$MGMT" -n 5spot-system patch deployment/5spot-controller --type=strategic \
@@ -168,7 +131,7 @@ kubectl --context "$MGMT" -n 5spot-system rollout status deployment/5spot-contro
 echo "==> Generating SSH key and authorizing it on ${REMOTE_NODE_HOST}"
 ssh-keygen -t ed25519 -N "" -f $HOME/remote_key <<<y >/dev/null 2>&1 || true
 REMOTE_IP="$(getent hosts "$REMOTE_NODE_HOST" | awk '{print $1}')"; REMOTE_IP="${REMOTE_IP:-$REMOTE_NODE_HOST}"
-# Best-effort: push the pubkey to the remote node (Killercoda nodes trust each other).
+# Best-effort: push the pubkey to the remote node (multi-node labs typically allow root SSH between nodes).
 ssh -o StrictHostKeyChecking=no "root@${REMOTE_IP}" \
   "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys" < $HOME/remote_key.pub || \
   echo "    (could not auto-authorize; do it manually for your environment)"
@@ -191,3 +154,6 @@ sed -i "s/REMOTE_NODE_IP/${REMOTE_IP}/g" "$WORKDIR/scheduledmachine-k0smotron.ya
 echo "==> RemoteMachine address set to ${REMOTE_IP}. ScheduledMachine NOT applied (that's Flag 1)."
 
 echo "==> PRE-BAKE COMPLETE $(date -u). Apply the ScheduledMachine to capture Flag 1."
+echo
+echo "👉 Load the kubectl shortcuts in THIS shell now:  exec bash"
+echo "   (then: k get nodes · ksm · kmgmt get pods -A · kwl get nodes)"

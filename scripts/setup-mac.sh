@@ -16,7 +16,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."   # repo root
 
-[ "$(uname -s)" = "Darwin" ] || { echo "This script is macOS-only. Linux: use scripts/5-spot-bootstrap.sh --env-tier hard. Windows: use Codespaces or Killercoda."; exit 2; }
+[ "$(uname -s)" = "Darwin" ] || { echo "This script is macOS-only. Linux: use scripts/5-spot-bootstrap.sh --env-tier hard. Windows: use Codespaces or the iximiuz browser lab."; exit 2; }
 
 MODE="install"
 case "${1:-}" in --check) MODE=check;; --up) MODE=up;; esac

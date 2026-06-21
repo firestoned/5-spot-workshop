@@ -20,7 +20,7 @@ the controller is an optional badge of honour.
   ```
   Linux is also the best host for the ⭐⭐ Confidential Containers bonus
   (native `/dev/kvm`).
-- **Windows** — use [Codespaces](codespaces-setup.md) or [Killercoda](killercoda-user.md).
+- **Windows** — use [Codespaces](codespaces-setup.md) or the [iximiuz browser lab](https://labs.iximiuz.com/skill-paths/5-spot-ctf).
 
 ## You need an SSH target (the "remote machine")
 
@@ -39,7 +39,7 @@ Pick one:
 
 > **Colima users — you authorise the key, not the script.** The pre-bake's
 > key-authorisation step is best-effort: it assumes the management host already
-> trusts the target (true on Killercoda, **not** on Colima), so on a Mac it
+> trusts the target (often true on a multi-node browser lab, **not** on Colima), so on a Mac it
 > prints `could not auto-authorize` and moves on. You finish it by hand in the
 > next section. Linux users SSH-ing into a box they already control can skip it.
 

@@ -18,7 +18,7 @@ while [ $# -gt 0 ]; do case "$1" in
   --tier) TIER="$2"; shift 2;;
   --live) LIVE=true; shift;;
   --keep) KEEP=true; shift;;
-  *) echo "usage: $0 [--tier all|killercoda|codespaces|kind|k0smotron] [--live] [--keep]"; exit 2;;
+  *) echo "usage: $0 [--tier all|codespaces|kind|k0smotron] [--live] [--keep]"; exit 2;;
 esac; done
 
 PASS=0; FAIL=0
@@ -30,7 +30,7 @@ section(){ printf '\n━━ %s ━━\n' "$*"; }
 static_repo() {
   section "Repo hygiene"
   [ -f README.md ] && ok "README.md" || bad "README.md missing"
-  for f in docs/cli-setup.md docs/killercoda-setup.md docs/killercoda-user.md docs/codespaces-setup.md docs/kind-setup.md docs/hard-setup.md docs/quickstart-tiers.md docs/user-guide.md docs/lab-guide.md; do
+  for f in docs/cli-setup.md docs/codespaces-setup.md docs/kind-setup.md docs/hard-setup.md docs/quickstart-tiers.md docs/user-guide.md docs/lab-guide.md; do
     [ -f "$f" ] && ok "$f" || bad "$f missing"; done
   for s in scripts/5-spot-bootstrap.sh scripts/setup-mac.sh; do
     [ -x "$s" ] && bash -n "$s" && ok "$s (exec + syntax)" || bad "$s"; done
@@ -44,19 +44,12 @@ static_repo() {
   [ "$pins" -le 1 ] && ok "5-spot image pin consistent" || bad "5-spot image pin drift"
 }
 
-static_killercoda() {
-  section "Killercoda (static)"
+static_scenarios() {
+  section "Scenarios (static)"
   for sc in workshop/5spot-ctf-capd workshop/5spot-ctf-k0smotron; do
-    python3 -c "import json;json.load(open('$sc/index.json'))" 2>/dev/null && ok "$sc/index.json valid" || bad "$sc/index.json"
-    # every step file referenced in index.json must exist
-    python3 - "$sc" <<'PYEOF' && ok "$sc step files all present" || bad "$sc missing step files"
-import json,sys,os
-sc=sys.argv[1]; d=json.load(open(f"{sc}/index.json"))["details"]
-files=[d["intro"]["text"], d["intro"].get("background",""), d["finish"]["text"]]
-for s in d["steps"]: files += [s["text"], s.get("verify","")]
-missing=[f for f in files if f and not os.path.exists(f"{sc}/{f}")]
-sys.exit(1 if missing else 0)
-PYEOF
+    # core scenario files must exist (the pre-bake + at least one step verifier)
+    [ -f "$sc/setup-background.sh" ] && ok "$sc/setup-background.sh present" || bad "$sc/setup-background.sh missing"
+    ls "$sc"/step*/verify.sh >/dev/null 2>&1 && ok "$sc step verifiers present" || bad "$sc has no step verifiers"
     for sh in "$sc"/setup-background.sh "$sc"/*/verify.sh; do
       bash -n "$sh" 2>/dev/null && : || bad "syntax: $sh"; done
     ok "$sc shell syntax"
@@ -166,12 +159,11 @@ live_k0smotron() {
 
 # ---------- run ----------------------------------------------------------------
 case "$TIER" in
-  all)        static_repo; static_killercoda; static_codespaces; static_leaderboard; static_kind
+  all)        static_repo; static_scenarios; static_codespaces; static_leaderboard; static_kind
               $LIVE && { live_kind; };;
-  killercoda) static_killercoda;;
   codespaces) static_codespaces;;
   kind)       static_kind; $LIVE && live_kind;;
-  k0smotron)  static_killercoda; $LIVE && live_k0smotron;;
+  k0smotron)  static_scenarios; $LIVE && live_k0smotron;;
   *) echo "unknown tier '$TIER'"; exit 2;;
 esac
 

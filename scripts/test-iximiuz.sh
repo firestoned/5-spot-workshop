@@ -53,11 +53,32 @@ else
   done <<< "$refs"
 fi
 
-# 3) surface unresolved publish-time TODOs (informational, not a failure)
+# 3) playground names must be real base playgrounds (confirmed via the iximiuz
+#    playgrounds API: https://labs.iximiuz.com/api/playgrounds?filter=base)
+KNOWN_PG="docker mini-lan-ubuntu-docker mini-lan-ubuntu k8s-omni k3s k3s-bare k0s ubuntu-22-04 ubuntu-24-04 ubuntu-26-04 docker-swarm"
+while IFS= read -r f; do
+  pg=$(grep -A2 '^playground:' "$f" | grep -E '^[[:space:]]*name:' | head -1 | sed -E 's/.*name:[[:space:]]*//; s/[[:space:]]*$//')
+  [ -z "$pg" ] && continue
+  if printf '%s\n' $KNOWN_PG | grep -qx "$pg"; then ok "playground '$pg' is a known base playground: ${f#$ROOT/}"
+  else bad "playground '$pg' not in known base playgrounds ($f) — check labctl playground list"; fi
+done < <(find "$ROOT/challenges" -name 'index.md' 2>/dev/null | sort)
+
+# 4) challenge units must reference the challenge via a `:challenge:` card key
+#    (the `:content:` key is for tutorials/courses; using it on a challenge breaks the card)
+while IFS= read -r f; do
+  grep -q '^challenges:' "$f" || continue
+  if grep -q ':content: challenges\.' "$f"; then
+    bad "unit uses ':content: challenges.…' — challenge cards need ':challenge:' ($f)"
+  else ok "challenge card key ok: ${f#$ROOT/}"; fi
+done < <(find "$ROOT/skill-paths" -name 'unit-*.md' 2>/dev/null | sort)
+
+# 5) surface any unresolved publish-time TODOs (informational, not a failure)
 todos=$(grep -rc "TODO(verify at publish)" "$ROOT" 2>/dev/null | grep -v ':0$' || true)
 if [ -n "$todos" ]; then
   echo "  • publish-time TODOs to resolve (see docs/iximiuz-setup.md §4):"
   echo "$todos" | sed 's/^/      /'
+else
+  echo "  • no unresolved publish-time TODOs 🎉"
 fi
 
 echo

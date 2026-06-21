@@ -74,8 +74,8 @@ make salt-flags SALT=OSFF26     # FLAG{X} → FLAG{X_OSFF26} in every verify.sh
 make leaderboard-seed CTFD_TOKEN=…   # re-seed; stays in sync automatically
 ```
 
-Do this on the morning of the event (push to the branch Killercoda watches), and
-the GitHub-visible flags from yesterday no longer validate.
+Do this on the morning of the event (then re-publish the browser lab / re-run the
+pre-bake), and the GitHub-visible flags from yesterday no longer validate.
 
 ## Option B: ctfd.io hosted free tier
 

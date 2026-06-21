@@ -12,7 +12,7 @@ description: |
 
 categories:
   - kubernetes
-  - cluster-api
+  - containers
 
 tagz:
   - 5-spot
@@ -29,24 +29,24 @@ updatedAt: 2026-06-19
 cover: __static__/cover.png
 
 # PLAYGROUND
-# The `docker` base playground is a single Linux server with Docker pre-installed
-# (4 CPU / 10 GiB RAM) — enough headroom for kind + CAPD's ~4 sibling containers.
-# <!-- TODO(verify at publish): confirm the base playground name is `docker` via
-#      `labctl playground list`; the single machine is `docker-01`. -->
+# The `docker` base playground is a single Linux server (machine `docker-01`) with
+# Docker pre-installed (4 CPU / 10 GiB RAM) — enough headroom for kind + CAPD's ~4
+# sibling containers. Name/machine confirmed via the iximiuz playgrounds API. The
+# single machine means tasks need no explicit `machine:` (they run on docker-01).
 playground:
   name: docker
 
 # TASKS
 # - init_prebake runs ONCE on playground init (screen shows "loading" until done).
-#   It clones this very repo and runs the EXISTING Killercoda pre-bake script, so
+#   It clones this very repo and runs the EXISTING shared pre-bake script, so
 #   there is a single source of truth for the bring-up logic.
 # - The verify_* tasks are regular tasks: the engine runs each in a loop until it
 #   exits 0, and the header shows how many are complete — that's the CTF scoring.
 #   Each one just shells out to the EXISTING step verifier (which already exits
 #   0/non-0 and self-posts to the flagboard).
 #
-# All tasks run as the default `root` user (HOME=/root) — matching how the
-# pre-bake and verifiers were written for Killercoda. Run your own shell commands
+# All tasks run as the default `root` user (HOME=/root) — matching how the shared
+# pre-bake and verifiers were written. Run your own shell commands
 # as root too (`sudo -i`), since the kubeconfig + clones live under /root.
 tasks:
   init_prebake:

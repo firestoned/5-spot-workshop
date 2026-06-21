@@ -1,7 +1,7 @@
 # CLI Setup — get every tool the workshop needs
 
 This installs the command-line tools used across all tiers. Do this **before** the
-workshop (or it's pre-installed for you on the Easy/Killercoda tier). Pins matter —
+workshop (or it's pre-installed for you on the Easy browser-lab tier). Pins matter —
 read the notes.
 
 > 📚 5-Spot's own [Prerequisites](https://5spot.finos.org/installation/prerequisites/)

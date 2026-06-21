@@ -5,20 +5,22 @@ multi-node VM **playgrounds** (more headroom than browser-only sandboxes) with a
 automated **task engine** that checks a learner's progress — a natural fit for our
 CTF flag mechanic. This guide publishes the 5-Spot workshop there.
 
-Unlike Killercoda (which watches a public repo), iximiuz content is pushed from your
-machine with the **`labctl`** CLI against your **author account**.
+iximiuz content is pushed from your machine with the **`labctl`** CLI against your
+**author account** (it does not watch a git repo).
 
 ## 1. Account & CLI
 
-1. Sign in / request authoring at https://labs.iximiuz.com (authoring may require an
-   author plan — confirm on your account).
+1. Sign in at https://labs.iximiuz.com. **Authoring requires a paid plan** — the
+   **Complete Bundle** ("Pro: Creator and Trainer modes"). On the free tier,
+   `labctl content create` fails with `402: Cannot create an author profile while on
+   the free tier`, so publishing is blocked until you upgrade. (Everything in this
+   repo is publish-ready; the only gate is the account tier.)
 2. Install the CLI and authenticate:
    ```bash
-   curl -sf https://labs.iximiuz.com/cli/install.sh | sh   # or: brew install iximiuz/labctl/labctl
+   curl -sf https://labs.iximiuz.com/cli/install.sh | sh   # → ~/.iximiuz/labctl/bin (added to PATH)
+   # or on macOS/Linux:  brew install labctl
    labctl auth login
    ```
-   <!-- TODO(verify at publish): confirm the exact install command / tap name from
-        https://labs.iximiuz.com (docs course "labs-docs"). -->
 
 ## 2. What's in this repo
 
@@ -36,10 +38,10 @@ iximiuz/
     5spot-ctf-k0smotron/index.md # 🔵 k0s + k0smotron — 5 flags
 ```
 
-**How it maps to the Killercoda scenarios** (single source of truth — we do *not*
+**How it maps to the `workshop/` scenarios** (single source of truth — we do *not*
 duplicate the bring-up or verifier bash):
 
-| Killercoda | iximiuz Labs |
+| `workshop/` scenario | iximiuz Labs |
 |---|---|
 | `setup-background.sh` pre-bake | a challenge **`init: true`** task that `git clone`s this repo and runs the *same* `workshop/.../setup-background.sh` |
 | step `verify.sh` (flag) | a **regular task** that shells out to the *same* `workshop/.../verify.sh`; the header shows flags-complete = scoring |
@@ -52,50 +54,78 @@ repo public first**, then publish the content.
 
 ## 3. Choosing the playground
 
-| Challenge | Base playground | Resources | Notes |
-|-----------|-----------------|-----------|-------|
-| CAPD (🟢) | `docker` | 4 CPU / **10 GiB**, single node | Comfortable for kind + CAPD's ~4 sibling containers. |
-| k0smotron (🔵) | MiniLAN (Ubuntu, Docker) | ~2 CPU / **4 GiB per node**, 4 nodes | Needs a 2nd node as the `RemoteMachine` SSH target. Heavier — **best-effort** (same caveat the README gives Killercoda). |
+| Challenge | Base playground (`playground.name`) | Machines | Resources | Notes |
+|-----------|-------------------------------------|----------|-----------|-------|
+| CAPD (🟢) | `docker` | `docker-01` | 4 CPU / **10 GiB**, single node | Comfortable for kind + CAPD's ~4 sibling containers. Tasks need no `machine:`. |
+| k0smotron (🔵) | `mini-lan-ubuntu-docker` | `node-01`…`node-04` | ~2 CPU / **4 GiB per node** | `node-01` = mgmt; `node-02` = `RemoteMachine` SSH target. Heavier — **best-effort** (same caveat the README gives the browser lab). |
 
-List exact base names/machines with `labctl playground list` and reconcile them with
-the `playground.name` / per-task `machine:` values in the two `index.md` files.
+Names and machine hostnames above are confirmed against the iximiuz playgrounds API
+(`https://labs.iximiuz.com/api/playgrounds?filter=base`); `make iximiuz` re-checks
+them. To re-verify on your account: `labctl playground list`.
 
-## 4. ⚠️ Resolve the TODOs before publishing
+## 4. Before publishing — what's confirmed, what to smoke-test
 
-The content carries `<!-- TODO(verify at publish): ... -->` markers where a value
-couldn't be confirmed offline:
+All format/wiring values are resolved and checked by `make iximiuz` (frontmatter
+parses, playground names valid, challenge cards use the `:challenge:` key, every
+referenced `workshop/.../*.sh` exists). No unresolved publish-time markers remain.
 
-- the base-playground **name** strings (esp. `minilan-ubuntu-docker`) and **machine
-  hostnames** (the k0smotron tasks pin to `node-01`);
-- whether skill-path units reference challenges via a **`challenges:`** map and the
-  `::card` `:content:` path;
-- the **k0smotron pre-bake** (`workshop/5spot-ctf-k0smotron/setup-background.sh`) was
-  written for Killercoda's `node01`/`node02` + `REMOTE_NODE_HOST` and must be adapted
-  to MiniLAN's hostnames/IPs so the SSH target is wired correctly.
+One thing still needs a **live smoke-test on your account** — it can't be validated
+offline:
 
-Grep them: `grep -rn "TODO(verify at publish)" iximiuz/`.
+- **k0smotron RemoteMachine SSH on MiniLAN.** The CAPD challenge is solid. The
+  k0smotron pre-bake provisions a k0s worker onto `node-02` over SSH: the init task
+  passes `REMOTE_NODE_HOST=node-02`, and the script resolves that hostname → IP and
+  pushes a generated key to `root@node-02`. This relies on `node-01` reaching
+  `node-02` as root. If MiniLAN doesn't allow that out of the box, the key-push step
+  logs a warning and the RemoteMachine won't come up — authorize the key manually
+  (or adjust the SSH step) and re-run. Start this challenge once end-to-end and watch
+  the init task / `tail -f /tmp/5spot-setup.log` before relying on it in a session.
+
+Per-node RAM on MiniLAN (~4 GiB) is also tight for k0smotron; if it OOMs, keep the
+k0smotron track as the local/self-hosted real path and run only CAPD in the browser.
 
 ## 5. Publish
 
-Create each content item once (registers it server-side and scaffolds metadata),
-then push the local source:
+One command does the whole flow — it installs `labctl` if missing, verifies you're
+authenticated, then creates (first run) and pushes all three items:
 
 ```bash
-cd iximiuz
-
-# first time only — create on the server
-labctl content create challenge  5spot-ctf-capd       --dir challenges/5spot-ctf-capd
-labctl content create challenge  5spot-ctf-k0smotron  --dir challenges/5spot-ctf-k0smotron
-labctl content create skill-path 5-spot-ctf           --dir skill-paths/5-spot-ctf
-
-# every update — push local → remote
-labctl content push challenge  5spot-ctf-capd       --dir challenges/5spot-ctf-capd       --force
-labctl content push challenge  5spot-ctf-k0smotron  --dir challenges/5spot-ctf-k0smotron  --force
-labctl content push skill-path 5-spot-ctf           --dir skill-paths/5-spot-ctf          --force
+make iximiuz-publish
 ```
 
-> `labctl content create` may scaffold its own `index.md`/`__static__/` — keep our
-> files (don't let it overwrite). The CLI can hot-reload on save while authoring.
+Two interactive bits, both in a normal terminal (not pipeable/CI):
+
+1. **Login** — `labctl auth login` opens a browser flow. Run it once first:
+   ```bash
+   labctl auth login          # one-time; then re-run make iximiuz-publish
+   ```
+2. **Create confirmation** — `labctl content create` asks a **y/N** per new item
+   (there's no `--yes` flag, and `--quiet` still prompts). Answer **y** for each.
+   The publish script does *not* suppress this prompt — if you ever see it appear to
+   hang right after a `── kind/name ──` line, it's waiting for your `y`.
+
+> Gotcha: `labctl auth whoami` exits 0 even when logged out, so the script gates on
+> the "Not logged in" message, not the exit code. And `create` writes to `/dev/tty`
+> directly, so it can't be auto-answered by piping — it needs a real terminal.
+
+Under the hood (`scripts/iximiuz-publish.sh`), per item:
+- **create** registers it server-side (tolerated if it already exists). It runs
+  against a *throwaway copy* of the content, because `create` may scaffold/overwrite
+  `index.md` in its `--dir` — we never point it at the real source.
+- **push `--force`** uploads our authored files from the real dir and makes the
+  remote match local exactly.
+
+Manual equivalent, if you'd rather not use the wrapper (run from `iximiuz/`):
+
+```bash
+labctl content create   challenge  5spot-ctf-capd      --dir challenges/5spot-ctf-capd      # once
+labctl content push      challenge  5spot-ctf-capd      --dir challenges/5spot-ctf-capd --force
+# …repeat for 5spot-ctf-k0smotron and the 5-spot-ctf skill-path
+```
+
+> Tip: `labctl content push --watch` hot-reloads on save for a fast authoring loop.
+> After install, add `~/.iximiuz/labctl/bin` to your PATH (the installer prints the
+> exact line for your shell rc).
 
 ## 6. Verify & share
 

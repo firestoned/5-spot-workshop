@@ -5,11 +5,10 @@
 #   ./scripts/5-spot-bootstrap.sh --env-tier kind          # local kind (Medium)
 #   ./scripts/5-spot-bootstrap.sh --env-tier hard          # full local k0smotron (Hard)
 #   ./scripts/5-spot-bootstrap.sh --env-tier codespaces    # verify a Codespace
-#   ./scripts/5-spot-bootstrap.sh --env-tier killercoda    # nothing to do (browser)
 #   ./scripts/5-spot-bootstrap.sh --env-tier kind --check-only   # report, don't install
 #
 # Supports macOS (Homebrew) and Linux (amd64/arm64). Windows users: use the
-# codespaces or killercoda tiers — see docs/quickstart-tiers.md.
+# codespaces tier or the iximiuz browser lab — see docs/quickstart-tiers.md.
 # Docs: https://5spot.finos.org/installation/prerequisites/
 # =============================================================================
 set -uo pipefail
@@ -92,16 +91,11 @@ ensure_docker_running() {
 }
 
 # ---- tiers -------------------------------------------------------------------
-[ -z "$TIER" ] && { red "required: --env-tier {killercoda|codespaces|kind|hard}"; exit 2; }
+[ -z "$TIER" ] && { red "required: --env-tier {codespaces|kind|hard}"; exit 2; }
 echo "5-Spot bootstrap — tier: $TIER  ($OS/$ARCH)  $($CHECK_ONLY && echo CHECK-ONLY)"
 echo
 
 case "$TIER" in
-  killercoda)
-    green "  ✓ Nothing to install — Killercoda runs in your browser."
-    echo  "    Open the scenario link from the workshop and press START."
-    ;;
-
   codespaces)
     # Inside a Codespace the devcontainer installs everything. When run outside
     # one (or after an incomplete rebuild), install whatever's missing instead of
@@ -161,7 +155,7 @@ case "$TIER" in
     fi
     ;;
 
-  *) red "unknown tier '$TIER' — use killercoda|codespaces|kind|hard"; exit 2;;
+  *) red "unknown tier '$TIER' — use codespaces|kind|hard"; exit 2;;
 esac
 
 echo
